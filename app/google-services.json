@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "524178754119",
+    "project_id": "coupleswallpaper",
+    "storage_bucket": "coupleswallpaper.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:524178754119:android:3e1f1f4abdd7877a0bbf62",
+        "android_client_info": {
+          "package_name": "com.example.cowall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3lw9JMoZhsTfxsHFwrsAhj2BOc3HOZaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
