@@ -24,6 +24,7 @@ import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
+import java.io.File
 import java.io.IOException
 
 
@@ -65,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         database = Firebase.database
 
-        database.reference.addValueEventListener(object : ValueEventListener {
+        database.reference.child("uriString").addValueEventListener(object : ValueEventListener {
             override fun onCancelled(error: DatabaseError) {
                 Log.d(Wall_Tag,"not able to send message "+ error)
             }
@@ -74,8 +75,26 @@ class MainActivity : AppCompatActivity() {
 
                 val user = snapshot.getValue()
                 Log.d(Wall_Tag,"message arried "+user)
+                if (snapshot.hasChildren()) {
+                    val lastMessageSnapshot = snapshot.children.last()
+                    val lastMessage = lastMessageSnapshot.getValue()
+
+                    if (lastMessage != null) {
+                        // Do something with the last message
+                        Log.d(Wall_Tag,"Last Message: $lastMessage")
+                        getImageFromFirebase(lastMessage.toString())
+                    }
+                }
             }
         })
+
+//        Intent(RunningService.Actions.START.toString()).also{
+//            startService(it)
+//        }
+        Intent(applicationContext, RunningService::class.java).also{
+            it.action =  RunningService.Actions.START.toString()
+            startService(it)
+        }
     }
     private fun checkPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
@@ -112,10 +131,14 @@ class MainActivity : AppCompatActivity() {
         Log.d(Wall_Tag,"sending mesage to firebase")
 //        database = FirebaseDatabase.getInstance().getReference("messages")
 //        database.child("Chat").push().setValue("Firebass wellscom sstring honi chahiye")
-        database.reference.child("sendMessage")
+        sendMessage("sendMessage","hey there")
+    }
+
+    fun sendMessage(childPath:String, msg:String){
+        database.reference.child(childPath)
             .push()
             .setValue(
-                "my sending messages rahege ",
+                msg,
                 DatabaseReference.CompletionListener { databaseError, databaseReference ->
                     if (databaseError != null) {
                         Log.d(
@@ -136,10 +159,7 @@ class MainActivity : AppCompatActivity() {
 //                        .child(uri.lastPathSegment!!)
 //                    putImageInStorage(storageReference, uri, key)
                 })
-
     }
-
-
 
     fun btnUploadFunction(view: View) {
         if (checkPermission()) {
@@ -153,7 +173,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun btnSetWallpaperFunction(view: View) {
-        setWallpaper()
+        val wallpaperManager = WallpaperManager.getInstance(this)
+        try {
+            selectedImageBitmap?.let {
+                wallpaperManager.setBitmap(it)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -205,7 +232,8 @@ class MainActivity : AppCompatActivity() {
 //                        .load(it)
 //                        .into(imageview)
 
-                Log.e(Wall_Tag, "download passed" + it.path)
+                Log.d(Wall_Tag, "download passed " + it.path)
+                sendMessage("uriString", sd.toString())
             }.addOnFailureListener {
                 Log.e(Wall_Tag, "Failed in downloading")
             }
@@ -245,16 +273,35 @@ class MainActivity : AppCompatActivity() {
         }
         return uri.path?.lastIndexOf('/')?.let { uri.path?.substring(it) }
     }
-    private fun setWallpaper() {
-        val wallpaperManager = WallpaperManager.getInstance(this)
+
+    fun setWallpaper(imagePath: String) {
+        val wallpaperManager = WallpaperManager.getInstance(applicationContext)
+
+        val bitmap = BitmapFactory.decodeFile(imagePath)
+
         try {
-            selectedImageBitmap?.let {
-                wallpaperManager.setBitmap(it)
-            }
+            wallpaperManager.setBitmap(bitmap)
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
+    fun getImageFromFirebase(imgPath : String = "images/image.jpg"){
+        val storageRef = Firebase.storage.reference
+        val imageRef = storageRef.child("file").child(imgPath) // Replace with your actual image path
 
+        val localFile = File.createTempFile("tempImage", "jpg")
+        Log.d(Wall_Tag,"downloaded on the way " + imgPath)
+
+        imageRef.getFile(localFile).addOnSuccessListener {
+            // Image downloaded successfully
+            // Now set it as wallpaper
+            setWallpaper(localFile.absolutePath)
+            Log.d(Wall_Tag,"downloaded sucesffuly ")
+        }.addOnFailureListener {
+            // Handle the failure to download the image
+            Log.e(Wall_Tag,it.toString())
+        }
+
+    }
 }
