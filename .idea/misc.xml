@@ -3,7 +3,10 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/dev-cp/AndroidStudio/CoWall/app/src/main/res/drawable/background.xml" value="0.2555" />
+        <entry key="..\:/dev-cp/AndroidStudio/CoWall/app/src/main/res/layout/activity_create_or_join_room.xml" value="0.22826086956521738" />
         <entry key="..\:/dev-cp/AndroidStudio/CoWall/app/src/main/res/layout/activity_main.xml" value="0.22826086956521738" />
+        <entry key="..\:/dev-cp/AndroidStudio/CoWall/app/src/main/res/layout/activity_splash_screen.xml" value="0.12239583333333333" />
       </map>
     </option>
   </component>

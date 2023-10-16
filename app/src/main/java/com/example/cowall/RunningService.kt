@@ -2,8 +2,10 @@ package com.example.cowall
 
 import android.app.Notification
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.NonCancellable.start
 
@@ -25,18 +27,23 @@ class RunningService : Service() {
     }
 
     private fun start(){
-        for( i in 1..100){
             val notification = NotificationCompat.Builder(this, "running_channel")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Wallpaper Updates")
-                .setContentText("Looking for wallpapers ${i}")
+                .setContentText("Looking for wallpapers 100")
                 .build()
             startForeground(1,notification)
-        }
 
 
         val fbc = FireBaseConnector()
-        fbc.initializeConnection()
-        fbc.lookForUpdates()
+        fbc.initializeConnection(this.applicationContext)
+        val sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+        var roomId : String = "unknown"
+        if (sharedPref.contains("joinedRoomId")) {
+            roomId = sharedPref.getString("joinedRoomId", "default_value").toString()
+            fbc.lookForUpdates("roomChat/${roomId}")
+        } else {
+            Toast.makeText(this,"Some Error",Toast.LENGTH_LONG)
+        }
     }
 }

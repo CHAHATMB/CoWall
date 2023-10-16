@@ -1,25 +1,28 @@
 package com.example.cowall
 
 import android.Manifest
-import android.Manifest.permission.SET_WALLPAPER
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.firebase.database.*
+import com.example.cowall.databinding.ActivityMainBinding
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -36,12 +39,27 @@ class MainActivity : AppCompatActivity() {
     private val Wall_Tag = "Walld"
     private lateinit var database: FirebaseDatabase
     private lateinit var storageRef: FirebaseStorage
-
-//    val myRef = database.getReference("action")
+    private lateinit var binding: ActivityMainBinding
+    var context: Context? = null
+    private  lateinit var firebaseconn : FireBaseConnector
+    private lateinit var imgAdd : String
+    private lateinit var sharedPref : SharedPreferences
+    private val sharedPrefString : String = "cowall"
+    private lateinit var uniqueId : String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
+//        setContentView(R.layout.activity_main)
+        setContentView(view)
+
+        binding.btnSetWallpaper.setOnClickListener { btnSetWallpaperFunction() }
+        binding.btnSetWallpaper.isEnabled = false
+        binding.btnUpload.setOnClickListener { btnUploadFunction() }
+        context = applicationContext;
+        firebaseconn = FireBaseConnector()
+        firebaseconn.initializeConnection(this.applicationContext)
 
         if (!checkPermission()){
             requestPermission()
@@ -60,37 +78,11 @@ class MainActivity : AppCompatActivity() {
             Log.d(Wall_Tag,"no permissions ")
 
         }
-
         storageRef = Firebase.storage
 
         FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         database = Firebase.database
 
-        database.reference.child("uriString").addValueEventListener(object : ValueEventListener {
-            override fun onCancelled(error: DatabaseError) {
-                Log.d(Wall_Tag,"not able to send message "+ error)
-            }
-
-            override fun onDataChange(snapshot: DataSnapshot) {
-
-                val user = snapshot.getValue()
-                Log.d(Wall_Tag,"message arried "+user)
-                if (snapshot.hasChildren()) {
-                    val lastMessageSnapshot = snapshot.children.last()
-                    val lastMessage = lastMessageSnapshot.getValue()
-
-                    if (lastMessage != null) {
-                        // Do something with the last message
-                        Log.d(Wall_Tag,"Last Message: $lastMessage")
-                        getImageFromFirebase(lastMessage.toString())
-                    }
-                }
-            }
-        })
-
-//        Intent(RunningService.Actions.START.toString()).also{
-//            startService(it)
-//        }
         Intent(applicationContext, RunningService::class.java).also{
             it.action =  RunningService.Actions.START.toString()
             startService(it)
@@ -109,29 +101,6 @@ class MainActivity : AppCompatActivity() {
             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
             REQUEST_CODE_PERMISSION
         )
-    }
-
-    fun changeWallpaper(view: View) {
-//        // Check if we have permission
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SET_WALLPAPER)
-//            == PackageManager.PERMISSION_GRANTED
-//        ) {
-//            Log.d(Wall_Tag,"setting wallpaper")
-//
-//            // Set lock screen wallpaper
-//            val wallpaperManager = WallpaperManager.getInstance(applicationContext)
-//            val drawable = resources.getDrawable(R.drawable.new_wallpaper, null)
-//            wallpaperManager.setBitmap((drawable as BitmapDrawable).bitmap, null, true, WallpaperManager.FLAG_LOCK)
-//        } else {
-//            // Permission not granted, show a message or handle it accordingly
-//            // You can notify the user to grant the permission
-//            Log.d(Wall_Tag,"not able to set")
-//        }
-//        FirebaseDatabase.getInstance().getReference("messages")
-        Log.d(Wall_Tag,"sending mesage to firebase")
-//        database = FirebaseDatabase.getInstance().getReference("messages")
-//        database.child("Chat").push().setValue("Firebass wellscom sstring honi chahiye")
-        sendMessage("sendMessage","hey there")
     }
 
     fun sendMessage(childPath:String, msg:String){
@@ -161,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                 })
     }
 
-    fun btnUploadFunction(view: View) {
+    fun btnUploadFunction() {
         if (checkPermission()) {
             openImagePicker()
             Log.d(Wall_Tag,"opening image picker    ")
@@ -172,15 +141,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun btnSetWallpaperFunction(view: View) {
-        val wallpaperManager = WallpaperManager.getInstance(this)
-        try {
-            selectedImageBitmap?.let {
-                wallpaperManager.setBitmap(it)
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+    fun btnSetWallpaperFunction() {
+        firebaseconn.sendMessage("uriString", imgAdd)
     }
 
     override fun onRequestPermissionsResult(
@@ -212,96 +174,15 @@ class MainActivity : AppCompatActivity() {
             try {
                 selectedImageBitmap =
                     BitmapFactory.decodeStream(contentResolver.openInputStream(selectedImage!!))
-//                btn_set_wallpaper.isEnabled = true
+                binding.btnSetWallpaper.isEnabled = true
             } catch (e: IOException) {
                 e.printStackTrace()
             }
-            selectedImage?.let { uploadImageToFirebase(it) }
+            selectedImage?.let { imgAdd = firebaseconn.uploadImageToFirebase(it) }
 
         }
     }
 
-    private fun uploadImageToFirebase(selectedImage: Uri ){
-        val sd = getFileName(this.applicationContext, selectedImage!!)
-        val uploadTask = storageRef.reference.child("file/$sd").putFile(selectedImage)
-        // On success, download the file URL and display it
-        uploadTask.addOnSuccessListener {
-            // using glide library to display the image
-            storageRef.reference.child("file/$sd").downloadUrl.addOnSuccessListener {
-//                    Glide.with(this@MainActivity)
-//                        .load(it)
-//                        .into(imageview)
-
-                Log.d(Wall_Tag, "download passed " + it.path)
-                sendMessage("uriString", sd.toString())
-            }.addOnFailureListener {
-                Log.e(Wall_Tag, "Failed in downloading")
-            }
-        }.addOnFailureListener {
-            Log.e(Wall_Tag, "Image Upload fail")
-        }
-
-//        val urlTask = uploadTask.continueWithTask { task ->
-//            if (!task.isSuccessful) {
-//                task.exception?.let {
-//                    throw it
-//                }
-//            }
-//            ref.downloadUrl
-//        }.addOnCompleteListener { task ->
-//            if (task.isSuccessful) {
-//                val downloadUri = task.result
-//            } else {
-//                // Handle failures
-//                // ...
-//            }
-//        }
-    }
 
 
-    @SuppressLint("Range")
-    private fun getFileName(context: Context, uri: Uri): String? {
-        if (uri.scheme == "content") {
-            val cursor = context.contentResolver.query(uri, null, null, null, null)
-            cursor.use {
-                if (cursor != null) {
-                    if(cursor.moveToFirst()) {
-                        return cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME))
-                    }
-                }
-            }
-        }
-        return uri.path?.lastIndexOf('/')?.let { uri.path?.substring(it) }
-    }
-
-    fun setWallpaper(imagePath: String) {
-        val wallpaperManager = WallpaperManager.getInstance(applicationContext)
-
-        val bitmap = BitmapFactory.decodeFile(imagePath)
-
-        try {
-            wallpaperManager.setBitmap(bitmap)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    fun getImageFromFirebase(imgPath : String = "images/image.jpg"){
-        val storageRef = Firebase.storage.reference
-        val imageRef = storageRef.child("file").child(imgPath) // Replace with your actual image path
-
-        val localFile = File.createTempFile("tempImage", "jpg")
-        Log.d(Wall_Tag,"downloaded on the way " + imgPath)
-
-        imageRef.getFile(localFile).addOnSuccessListener {
-            // Image downloaded successfully
-            // Now set it as wallpaper
-            setWallpaper(localFile.absolutePath)
-            Log.d(Wall_Tag,"downloaded sucesffuly ")
-        }.addOnFailureListener {
-            // Handle the failure to download the image
-            Log.e(Wall_Tag,it.toString())
-        }
-
-    }
 }
