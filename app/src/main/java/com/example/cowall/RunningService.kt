@@ -41,6 +41,7 @@ class RunningService : Service() {
         var roomId : String = "unknown"
         if (sharedPref.contains("joinedRoomId")) {
             roomId = sharedPref.getString("joinedRoomId", "default_value").toString()
+            FireBaseConnector.setUniqueIds(sharedPref.getString("userUniqueId","default_user_id").toString(),roomId)
             fbc.lookForUpdates("roomChat/${roomId}")
         } else {
             Toast.makeText(this,"Some Error",Toast.LENGTH_LONG)

@@ -16,6 +16,9 @@ import com.google.firebase.storage.ktx.storage
 import java.io.File
 import java.io.IOException
 import java.util.*
+import com.google.gson.Gson
+
+data class UserChat(val userUniqueId: String, val uri: String)
 
 class FireBaseConnector {
     private lateinit var database: FirebaseDatabase
@@ -23,33 +26,55 @@ class FireBaseConnector {
     private val Wall_Tag = "Walld"
     lateinit var context: Context
 
+    companion object {
+        lateinit var userUniqueId : String
+        lateinit var roomId : String
+
+        fun setUniqueIds(userUniqueId: String, roomId:String){
+            this.roomId = roomId
+            this.userUniqueId = userUniqueId
+        }
+    }
+
     fun initializeConnection(context: Context){
         this.context = context
         storageRef = Firebase.storage
 
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+//        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         database = Firebase.database
+//        database.setPersistenceEnabled(true)
     }
 
     fun lookForUpdates(path: String) {
 
-        database.reference.child(path).addValueEventListener(object : ValueEventListener {
+        database.reference.child("roomChat/$roomId").addValueEventListener(object : ValueEventListener {
             override fun onCancelled(error: DatabaseError) {
                 Log.d(Wall_Tag, "not able to send message " + error)
             }
 
             override fun onDataChange(snapshot: DataSnapshot) {
 
-                val user = snapshot.getValue()
-                Log.d(Wall_Tag, "message arried " + user)
+//                val user = snapshot.getValue(String::class.java)
+//                val gson = Gson()
+//                val userChat = gson.fromJson(user, UserChat::class.java)
+//                Log.d(Wall_Tag, "Last Message: $user")
+//                if(userChat.userUniqueId != userUniqueId) {
+//                    getImageFromFirebase(userChat.uri)
+//                }
+                Log.d(Wall_Tag, "message arried " + snapshot.getValue())
                 if (snapshot.hasChildren()) {
+                    Log.d(Wall_Tag,"has last snapshot")
                     val lastMessageSnapshot = snapshot.children.last()
-                    val lastMessage = lastMessageSnapshot.getValue()
+                    val lastMessage = lastMessageSnapshot.getValue(String::class.java)
 
                     if (lastMessage != null) {
-                        // Do something with the last message
+                        Log.d(Wall_Tag,"till now no null")
+                        val gson = Gson()
+                        val userChat = gson.fromJson(lastMessage, UserChat::class.java)
                         Log.d(Wall_Tag, "Last Message: $lastMessage")
-                        getImageFromFirebase(lastMessage.toString())
+                        if(userChat.userUniqueId != userUniqueId) {
+                            getImageFromFirebase(userChat.uri)
+                        }
                     }
                 }
             }
@@ -81,7 +106,7 @@ class FireBaseConnector {
 
     fun getImageFromFirebase(imgPath : String = "images/image.jpg"){
         val storageRef = Firebase.storage.reference
-        val imageRef = storageRef.child("file").child(imgPath) // Replace with your actual image path
+        val imageRef = storageRef.child("file/$roomId").child(imgPath) // Replace with your actual image path
 
         val localFile = File.createTempFile("tempImage", "jpg")
         Log.d(Wall_Tag,"downloaded on the way " + imgPath)
@@ -119,31 +144,32 @@ class FireBaseConnector {
                     } else {
                         Log.d(Wall_Tag, "sab changa si bhaiyanu")
                     }
-
-
-                    // Build a StorageReference and then upload the file
-//                    val key = databaseReference.key
-//                    val storageReference = Firebase.storage
-//                        .getReference(user!!.uid)
-//                        .child(key!!)
-//                        .child(uri.lastPathSegment!!)
-//                    putImageInStorage(storageReference, uri, key)
                 })
     }
 
+    fun sendUri(uri:String){
+        // Convert object to JSON
+        val userChat = UserChat(userUniqueId, uri)
+        val gson = Gson()
+        val json = gson.toJson(userChat)
+
+        val database = FirebaseDatabase.getInstance()
+        val myRef = database.getReference("roomChat/$roomId")
+        myRef.push().setValue(json)
+    }
     fun uploadImageToFirebase(selectedImage: Uri) : String {
         val sd = "${UUID.randomUUID()}.jpg"
-        val uploadTask = storageRef.reference.child("file/$sd").putFile(selectedImage)
+        val uploadTask = storageRef.reference.child("file/$roomId/$sd").putFile(selectedImage)
         // On success, download the file URL and display it
         uploadTask.addOnSuccessListener {
             // using glide library to display the image
-            storageRef.reference.child("file/$sd").downloadUrl.addOnSuccessListener {
+            storageRef.reference.child("file/$roomId/$sd").downloadUrl.addOnSuccessListener {
 //                    Glide.with(this@MainActivity)
 //                        .load(it)
 //                        .into(imageview)
 
                 Log.d(Wall_Tag, "download passed " + it.path)
-//                sendMessage("uriString", sd.toString())
+                sendUri(sd)
             }.addOnFailureListener {
                 Log.e(Wall_Tag, "Failed in downloading")
             }

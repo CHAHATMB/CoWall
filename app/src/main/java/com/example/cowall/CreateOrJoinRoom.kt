@@ -31,6 +31,8 @@ class CreateOrJoinRoom : AppCompatActivity() {
         firebaseconn = FireBaseConnector()
         firebaseconn.initializeConnection(this.applicationContext)
 
+        sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+
         userUniqueId = getOrGenerateId("userUniqueId")
 
         roomId = getOrGenerateId("roomId")
@@ -44,24 +46,26 @@ class CreateOrJoinRoom : AppCompatActivity() {
         val roomId = binding.editRoomId.text.toString()
 //        FirebaseDatabase.getInstance().getReference("messages")
         Log.d(Wall_Tag,"sending mesage to firebase ${roomId}")
-        Toast.makeText(this,"button pressed",Toast.LENGTH_LONG)
+//        Toast.makeText(this,"button pressed",Toast.LENGTH_LONG)
 //        database = FirebaseDatabase.getInstance().getReference("messages")
 //        database.child("Chat").push().setValue("Firebass wellscom sstring honi chahiye")
 //        sendMessage("sendMessage","hey there")
-        firebaseconn.sendMessage("roomId/${binding.editRoomId.text}",userUniqueId)
+        firebaseconn.sendMessage("roomId/$roomId",userUniqueId)
 //        firebaseconn.
+        Log.d(Wall_Tag,"after sending")
         with (sharedPref.edit()) {
             putString("joinedRoomId", roomId)
             apply()
         }
-        val intent = Intent(this,MainActivity::class.java)
+        Log.d(Wall_Tag, "after sharedprefd")
+        val intent = Intent(this.applicationContext,MainActivity::class.java)
         startActivity(intent)
         finish()
     }
 
     private fun getOrGenerateId(identifierString : String) : String {
         // Writing to SharedPreferences
-        sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+
         var uniqueId : String
         if (sharedPref.contains(identifierString)) {
             uniqueId = sharedPref.getString(identifierString, "default_value").toString()

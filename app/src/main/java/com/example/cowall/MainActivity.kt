@@ -57,7 +57,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnSetWallpaper.setOnClickListener { btnSetWallpaperFunction() }
         binding.btnSetWallpaper.isEnabled = false
         binding.btnUpload.setOnClickListener { btnUploadFunction() }
-        context = applicationContext;
+        displaySelectedImage(null)
+//        context = applicationContext;
         firebaseconn = FireBaseConnector()
         firebaseconn.initializeConnection(this.applicationContext)
 
@@ -80,8 +81,8 @@ class MainActivity : AppCompatActivity() {
         }
         storageRef = Firebase.storage
 
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
-        database = Firebase.database
+//        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+//        database = Firebase.database
 
         Intent(applicationContext, RunningService::class.java).also{
             it.action =  RunningService.Actions.START.toString()
@@ -103,32 +104,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    fun sendMessage(childPath:String, msg:String){
-        database.reference.child(childPath)
-            .push()
-            .setValue(
-                msg,
-                DatabaseReference.CompletionListener { databaseError, databaseReference ->
-                    if (databaseError != null) {
-                        Log.d(
-                            Wall_Tag, "Unable to write message to database.",
-                            databaseError.toException()
-                        )
-                        return@CompletionListener
-                    } else {
-                        Log.d(Wall_Tag, "sab changa si bhaiyanu")
-                    }
 
-
-                    // Build a StorageReference and then upload the file
-//                    val key = databaseReference.key
-//                    val storageReference = Firebase.storage
-//                        .getReference(user!!.uid)
-//                        .child(key!!)
-//                        .child(uri.lastPathSegment!!)
-//                    putImageInStorage(storageReference, uri, key)
-                })
-    }
 
     fun btnUploadFunction() {
         if (checkPermission()) {
@@ -143,6 +119,26 @@ class MainActivity : AppCompatActivity() {
 
     fun btnSetWallpaperFunction() {
         firebaseconn.sendMessage("uriString", imgAdd)
+        binding.btnSetWallpaper.isEnabled = false
+    }
+    private fun displaySelectedImage(imageUri: Uri?) {
+
+        val sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+        if (imageUri != null) {
+            binding.imageView.setImageURI(imageUri)
+            val editor = sharedPref.edit()
+            editor.putString("imageUri", imageUri.toString())
+            editor.apply()
+        } else {
+            val imageUriString = sharedPref.getString("imageUri", null)
+
+            if (imageUriString != null) {
+                val imageUri = Uri.parse(imageUriString)
+                binding.imageView.setImageURI(imageUri)
+            } else {
+                binding.imageView.setImageDrawable(null)
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -175,10 +171,12 @@ class MainActivity : AppCompatActivity() {
                 selectedImageBitmap =
                     BitmapFactory.decodeStream(contentResolver.openInputStream(selectedImage!!))
                 binding.btnSetWallpaper.isEnabled = true
+
             } catch (e: IOException) {
                 e.printStackTrace()
             }
             selectedImage?.let { imgAdd = firebaseconn.uploadImageToFirebase(it) }
+            displaySelectedImage(selectedImage)
 
         }
     }

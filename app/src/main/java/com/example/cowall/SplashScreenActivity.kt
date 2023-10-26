@@ -35,6 +35,7 @@ class SplashScreenActivity : AppCompatActivity() {
             joinedRoomId = sharedPref.getString(identifierString, "default_value").toString()
             return true
         } else {
+            Log.d("Walld","baki condition works")
             if(sharedPref.contains("roomId")){
                 val roomId = sharedPref.getString("roomId", "default_value").toString()
                 val fbc = FireBaseConnector()
@@ -47,10 +48,12 @@ class SplashScreenActivity : AppCompatActivity() {
                     }
                     return true
                 } else{
+                    Log.d("Walld","Generated room id$roomId, no database")
                     return false
                 }
 
             } else {
+                Log.d("Walld","Doesn't have room id")
                 return false
             }
         }
