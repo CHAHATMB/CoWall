@@ -1,0 +1,92 @@
+<!-- activity_camera.xml -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".CameraActivity">
+
+    <!--    <SurfaceView-->
+<!--        android:id="@+id/surfaceView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="1" />-->
+
+    <FrameLayout
+        android:id="@+id/previewContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/white"
+        android:padding="16dp">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/surfaceView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+        <ImageView
+            android:id="@+id/photoImageView"
+            android:contentDescription="@string/app_name"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <!-- Add a border around the PreviewView -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/border_background" />
+
+    </FrameLayout>
+
+
+<!--    <Button-->
+<!--        android:id="@+id/captureButton"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Take Photo" />-->
+
+    <!--    <ImageView-->
+<!--        android:id="@+id/liveFilterImageView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="1"-->
+<!--        android:scaleType="fitCenter" />-->
+
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/captureButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="8dp"
+
+        android:backgroundTint="#FF4081"
+        android:contentDescription="@string/app_name"
+        android:elevation="6dp"
+        app:borderWidth="0dp"
+        app:fabSize="auto"
+
+        app:maxImageSize="40dp"
+        app:srcCompat="@drawable/ic_baseline_camera_24" />
+
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/sendImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:contentDescription="@string/app_name"
+            android:elevation="6dp"
+            android:visibility="gone"
+            app:borderWidth="20dp"
+            app:fabSize="auto"
+            app:maxImageSize="40dp"
+            app:srcCompat="@drawable/ic_baseline_send_24" />
+
+</LinearLayout>

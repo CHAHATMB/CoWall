@@ -88,6 +88,8 @@ class MainActivity : AppCompatActivity() {
             it.action =  RunningService.Actions.START.toString()
             startService(it)
         }
+        val intent = Intent(this, ChatRoomActivity::class.java)
+        startActivity(intent)
     }
     private fun checkPermission(): Boolean {
         return ContextCompat.checkSelfPermission(

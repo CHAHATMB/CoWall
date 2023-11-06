@@ -45,6 +45,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+//    implementation 'androidx.camera:camera-lifecycle:1.0.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
@@ -58,5 +59,36 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.5'
 
+    // CameraX core library using the camera2 implementation
+    def camerax_version = "1.2.0-alpha02"
+    // The following line is optional, as the core library is included indirectly by camera-camera2
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    // If you want to additionally use the CameraX Lifecycle library
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+
+    // If you want to additionally use the CameraX View class
+    implementation "androidx.camera:camera-view:${camerax_version}"
+
+    // If you want to additionally use the CameraX Extensions library
+    implementation "androidx.camera:camera-extensions:${camerax_version}"
+
+    // Scalable size unit
+    implementation 'com.intuit.sdp:sdp-android:1.0.6'
+    implementation 'com.intuit.ssp:ssp-android:1.0.6'
+    // Rounded image view
+    implementation 'com.makeramen:roundedimageview:2.3.0'
+    // GPU image
+    implementation 'jp.co.cyberagent.android:gpuimage:2.1.0'
+
+    // Koin - Dependency injection
+    def koin_version = "2.0.1"
+    implementation "io.insert-koin:koin-android:$koin_version"
+// use org.koin:koin-android-viewmodel instead for non-androidx projects!
+    implementation "io.insert-koin:koin-androidx-viewmodel:$koin_version"
+    implementation "io.insert-koin:koin-core:$koin_version"
+
+    // ViewModel
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1'
 
 }

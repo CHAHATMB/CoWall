@@ -14,13 +14,20 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
 import java.io.File
-import java.io.IOException
 import java.util.*
 import com.google.gson.Gson
+import kotlin.collections.ArrayList
 
 data class UserChat(val userUniqueId: String, val uri: String)
 
 class FireBaseConnector {
+    interface MessageUpdateCallback {
+        fun onMessageUpdated(updatedMessages: MessageModel)
+        fun onMessageGet(updatedMessages: List<MessageModel>)
+    }
+    private var messageUpdateCallback: MessageUpdateCallback? = null
+
+
     private lateinit var database: FirebaseDatabase
     private lateinit var storageRef: FirebaseStorage
     private val Wall_Tag = "Walld"
@@ -34,6 +41,14 @@ class FireBaseConnector {
             this.roomId = roomId
             this.userUniqueId = userUniqueId
         }
+
+        fun getUserUniqueID (): String {
+            return userUniqueId
+        }
+
+    }
+    fun setMessageUpdateCallback(callback: MessageUpdateCallback) {
+        messageUpdateCallback = callback
     }
 
     fun initializeConnection(context: Context){
@@ -73,7 +88,7 @@ class FireBaseConnector {
                         val userChat = gson.fromJson(lastMessage, UserChat::class.java)
                         Log.d(Wall_Tag, "Last Message: $lastMessage")
                         if(userChat.userUniqueId != userUniqueId) {
-                            getImageFromFirebase(userChat.uri)
+                            getImageFromFirebase(userChat.uri, userChat.userUniqueId)
                         }
                     }
                 }
@@ -104,7 +119,7 @@ class FireBaseConnector {
         }
     }
 
-    fun getImageFromFirebase(imgPath : String = "images/image.jpg"){
+    fun getImageFromFirebase(imgPath : String = "images/image.jpg",senderId: String="3245",flag:Boolean=true){
         val storageRef = Firebase.storage.reference
         val imageRef = storageRef.child("file/$roomId").child(imgPath) // Replace with your actual image path
 
@@ -113,8 +128,11 @@ class FireBaseConnector {
         try {
             imageRef.getFile(localFile).addOnSuccessListener {
                 // Image downloaded successfully
-                // Now set it as wallpaper
-                setWallpaper(localFile.absolutePath)
+                messageUpdateCallback?.onMessageUpdated(MessageModel("message hell", Uri.fromFile(File(localFile.absolutePath)),senderId))
+                if(flag){
+                    // Now set it as wallpaper
+                    setWallpaper(localFile.absolutePath)
+                }
                 Log.d(Wall_Tag,"downloaded sucesffuly ")
             }.addOnFailureListener {
                 // Handle the failure to download the image
@@ -204,5 +222,36 @@ class FireBaseConnector {
             returningValue = 0
         }
         return returningValue
+    }
+
+    fun getAllMessageData(){
+
+        var messageList = ArrayList<MessageModel>()
+        database.reference.child("roomChat/$roomId")
+            .orderByChild("timestamp")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.hasChildren()) {
+                        for (messageSnapshot in snapshot.children) {
+                            val message = messageSnapshot.getValue(String::class.java)
+                            val gson = Gson()
+                            val userChat = gson.fromJson(message, UserChat::class.java)
+                            userChat?.let {
+                                Log.d("Walld","traversing throug ${it.userUniqueId}")
+                                // Process and display the message in your UI
+                                // For example, you can add it to your adapter
+                                // messageAdapter.addMessage(message)
+//                                messageList.add(MessageModel("Chahats mesa",Uri.fromFile(File(it.uri)), it.userUniqueId))
+                                getImageFromFirebase(it.uri,it.userUniqueId,false)
+                            }
+                        }
+                    }
+//                    messageUpdateCallback?.onMessageGet(messageList)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Handle error
+                }
+            })
     }
 }
