@@ -40,6 +40,21 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
         adapter = MessageAdapter(this, messages)
         binding.chatRoomRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.chatRoomRecyclerView.adapter = adapter
+
+        intent.getParcelableExtra<Uri>("filteredImage")?.let{
+                imageUri ->
+            adapter.addMessage(MessageModel("Hi there sajan!", imageUri,FireBaseConnector.userUniqueId))
+            fbc.uploadImageToFirebase(imageUri)
+        }
+
+    }
+    override fun onResume(){
+        super.onResume()
+        intent.getParcelableExtra<Uri>("filteredImage")?.let{
+                imageUri ->
+            adapter.addMessage(MessageModel("hi stupid!", imageUri,FireBaseConnector.userUniqueId))
+            fbc.uploadImageToFirebase(imageUri)
+        }
     }
     override fun onMessageUpdated(newMessage: MessageModel) {
         adapter.addMessage(newMessage)

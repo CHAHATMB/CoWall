@@ -1,13 +1,15 @@
 package com.example.cowall
 
-import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.NonCancellable.start
 
 class RunningService : Service() {
 
@@ -26,8 +28,22 @@ class RunningService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun start(){
-            val notification = NotificationCompat.Builder(this, "running_channel")
+
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        val chan = NotificationChannel(
+            "NOTIFICATION_CHANNEL_ID",
+            "channelName", NotificationManager.IMPORTANCE_NONE
+        )
+        chan.description = "for muting"
+
+        assert(manager != null)
+        manager!!.createNotificationChannel(chan)
+
+
+        val notification = NotificationCompat.Builder(this, "NOTIFICATION_CHANNEL_ID")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Wallpaper Updates")
                 .setContentText("Looking for wallpapers 100")

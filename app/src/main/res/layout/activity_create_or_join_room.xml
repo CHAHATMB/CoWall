@@ -33,7 +33,7 @@
         app:layout_constraintStart_toStartOf="@+id/yourRoomId"
         app:layout_constraintTop_toBottomOf="@+id/yourRoomId" />
 
-    <EditText
+    <com.google.android.material.textfield.TextInputEditText
         android:id="@+id/editRoomId"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -57,5 +57,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editRoomId"
         app:layout_constraintVertical_bias="0.115" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:inputType="textPersonName"
+        android:minHeight="48dp"
+        android:hint="hi"
+        app:layout_constraintBottom_toTopOf="@+id/editRoomId"
+        app:layout_constraintEnd_toEndOf="@+id/yourRoomId"
+        app:layout_constraintStart_toStartOf="@+id/yourRoomId"
+        app:layout_constraintTop_toBottomOf="@+id/yourRoomId">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </com.google.android.material.textfield.TextInputLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

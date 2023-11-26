@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.media.ExifInterface
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -17,6 +18,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.cowall.activities.EditImageActivity
 import com.example.cowall.databinding.ActivityCameraBinding
 import com.google.common.util.concurrent.ListenableFuture
 import java.io.ByteArrayOutputStream
@@ -160,14 +162,29 @@ class CameraActivity : AppCompatActivity() {
                     // Get the captured image as a bitmap
                     val bitmap = image.toBitmap()
 
+
+
                     // Compress the bitmap
                     val compressedBitmap = compressBitmap(bitmap!!, 10) // Adjust quality level as needed
                     Log.d("Walld","Compressing the image on go")
                     val compressedImageFile = getCompressedImageFile()
                     compressedBitmap.compress(Bitmap.CompressFormat.JPEG, 10, FileOutputStream(compressedImageFile))
                     outputPath = compressedImageFile
-                    displayCapturedImage(compressedBitmap,outputPath)
+
+                    // Get the orientation of the captured image
+                    val ei = ExifInterface(outputPath.absolutePath)
+                    val orientation = ei.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_UNDEFINED
+                    )
+                    // Rotate the bitmap if necessary
+                    val rotatedBitmap = rotateImage(bitmap, 90f)
+                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 10, FileOutputStream(compressedImageFile))
+
+//                    displayCapturedImage(rotatedBitmap,outputPath)
+
                     image.close()
+                    sendImage()
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -204,21 +221,6 @@ class CameraActivity : AppCompatActivity() {
         matrix.postRotate(angle)
         return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
     }
-    private fun applyFilter(inputBitmap: Bitmap): Bitmap {
-        val outputBitmap = Bitmap.createBitmap(inputBitmap.width, inputBitmap.height, inputBitmap.config)
-
-        val canvas = Canvas(outputBitmap)
-        val paint = Paint()
-        val colorMatrix = ColorMatrix()
-
-        colorMatrix.setSaturation(0f) // 0 means grayscale
-        val filter = ColorMatrixColorFilter(colorMatrix)
-
-        paint.colorFilter = filter
-        canvas.drawBitmap(inputBitmap, 0f, 0f, paint)
-
-        return outputBitmap
-    }
     private fun displayCapturedImage(bitmap: Bitmap,outputPath: File) {
         binding.surfaceView.visibility = View.GONE
 //        binding.previewContainer.visibility = View.GONE
@@ -248,11 +250,15 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun sendImage() {
+//
+//        val resultIntent = Intent()
+//        resultIntent.putExtra("capturedImage", outputPath.absolutePath)
+//        setResult(Activity.RESULT_OK, resultIntent)
+//        finish()
 
-        val resultIntent = Intent()
-        resultIntent.putExtra("capturedImage", outputPath.absolutePath)
-        setResult(Activity.RESULT_OK, resultIntent)
-        finish()
+        val resultIntent = Intent(this, EditImageActivity::class.java)
+        resultIntent.putExtra("capturedImage",  Uri.fromFile(File(outputPath.absolutePath)))
+        startActivity(resultIntent)
     }
 
     private fun compressBitmap(bitmap: Bitmap, quality: Int): Bitmap {

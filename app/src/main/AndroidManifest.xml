@@ -28,14 +28,17 @@
         android:theme="@style/Theme.CoWall"
         tools:targetApi="31">
         <activity
-            android:name=".EditImageActivity"
+            android:name=".activities.EditImageActivity"
             android:exported="false" />
         <activity
             android:name=".SendCapturedImageActivity"
             android:exported="false"></activity>
         <activity
             android:name=".CameraActivity"
-            android:exported="false" />
+            android:exported="true" >
+
+
+        </activity>
         <activity
             android:name=".ChatRoomActivity"
             android:exported="true" />
@@ -58,6 +61,16 @@
         <service
             android:name=".RunningService"
             android:foregroundServiceType="dataSync" />
+        <provider
+            android:authorities="${applicationId}.provider"
+            android:name="androidx.core.content.FileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            >
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_path"/>
+        </provider>
     </application>
 
 </manifest>
