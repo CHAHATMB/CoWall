@@ -6,13 +6,45 @@
     android:layout_height="match_parent"
     tools:context=".ChatRoomActivity">
 
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/header_linear_layout"
+        android:layout_width="match_parent"
+        android:layout_height="?actionBarSize"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="#0050aa"
+        android:padding="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity=""
+            android:text="Co Wall"
+            android:textColor="#fff"
+            android:textSize="25dp"
+            android:layout_weight="1"
+            app:fontFamily="sans-serif"
+            android:paddingLeft="10dp"/>
+        <TextView
+            android:layout_width = "0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:gravity="right"
+            android:text="UserName"
+            android:textColor="#fff"
+            android:textSize="25dp"
+            android:layout_weight="1"
+            app:fontFamily="sans-serif"
+            android:paddingRight="10dp"/>
+    </androidx.appcompat.widget.LinearLayoutCompat>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chatRoomRecyclerView"
         android:layout_width="409dp"
         android:layout_height="729dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/header_linear_layout" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/cameraButton"

@@ -3,13 +3,12 @@ package com.example.cowall.activities
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import com.example.cowall.ChatRoomActivity
-import com.example.cowall.R
 import com.example.cowall.adapters.ImageFiltersAdapter
 import com.example.cowall.data.ImageFilter
 import com.example.cowall.databinding.ActivityEditImageBinding
@@ -101,13 +100,20 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
             saveFilteredImageDataState.uri?.let { savedImageUri ->
                 displayToast("saving immage and !")
                 Log.d("Walld","should start intent")
-                Intent(
-                    applicationContext,
-                    ChatRoomActivity::class.java
-                ).also { filteredImageIntent ->
-                    filteredImageIntent.putExtra(KEY_FILTERED_IMAGE_URI, savedImageUri)
-                    startActivity(filteredImageIntent)
+//                Intent(
+//                    applicationContext,
+//                    ChatRoomActivity::class.java
+//                ).also { filteredImageIntent ->
+//                    filteredImageIntent.putExtra(KEY_FILTERED_IMAGE_URI, savedImageUri)
+//                    startActivity(filteredImageIntent)
+//                }
+                Log.d("Walld", "this is saveImage " + savedImageUri.toString())
+                Intent().also { filteredImageIntent ->
+                    filteredImageIntent.putExtra(KEY_FILTERED_IMAGE_URI, savedImageUri.toString())
+                    setResult(RESULT_OK, filteredImageIntent)
+                    finish()
                 }
+
             } ?: kotlin.run {
                 saveFilteredImageDataState.error?.let{ error->
                     displayToast(error)

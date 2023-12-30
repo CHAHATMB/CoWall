@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.cowall.activities.EditImageActivity
 import com.example.cowall.databinding.ActivityChatRoomBinding
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
@@ -74,13 +75,23 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
-            val capturedImagePath = data?.getStringExtra("capturedImage")
-//            messages.add()
-            var imageUri =  Uri.fromFile(File(capturedImagePath))
-            adapter.addMessage(MessageModel("Hi there sajan!", imageUri,FireBaseConnector.userUniqueId))
-            fbc.uploadImageToFirebase(imageUri)
-            Log.d("Walld","recieve$capturedImagePath")
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK && data != null) {
+//            val capturedImagePath = data?.getStringExtra("capturedImage")
+////            messages.add()
+//            var imageUri =  Uri.fromFile(File(capturedImagePath))
+            Uri.parse(data.extras?.getString(EditImageActivity.KEY_FILTERED_IMAGE_URI)).let{
+                Log.d("Walld","recieve${it.toString()}")
+                if(it!=null) {
+                    adapter.addMessage(
+                        MessageModel(
+                            "Hi there sajan!",
+                            it,
+                            FireBaseConnector.userUniqueId
+                        )
+                    )
+                    fbc.uploadImageToFirebase(it)
+                }
+            }
         }
     }
 

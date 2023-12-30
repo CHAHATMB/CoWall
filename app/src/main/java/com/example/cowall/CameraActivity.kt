@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.Executor
 
 
@@ -258,7 +259,7 @@ class CameraActivity : AppCompatActivity() {
 
         val resultIntent = Intent(this, EditImageActivity::class.java)
         resultIntent.putExtra("capturedImage",  Uri.fromFile(File(outputPath.absolutePath)))
-        startActivity(resultIntent)
+        startActivityForResult(resultIntent,89)
     }
 
     private fun compressBitmap(bitmap: Bitmap, quality: Int): Bitmap {
@@ -278,5 +279,21 @@ class CameraActivity : AppCompatActivity() {
 
         val fileName = "compressed_image_${System.currentTimeMillis()}.jpg"
         return File(directory, fileName)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 89 && resultCode == RESULT_OK && data != null) {
+
+            data.extras?.getString(EditImageActivity.KEY_FILTERED_IMAGE_URI).let{
+                Log.d("Walld","rwwecieve in cama${it}  " + data.extras)
+                Intent().also { camintent ->
+                    camintent.putExtra(EditImageActivity.KEY_FILTERED_IMAGE_URI, it)
+                    setResult(RESULT_OK, camintent)
+                    finish()
+                }
+            }
+
+        }
     }
 }

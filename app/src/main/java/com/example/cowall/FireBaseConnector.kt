@@ -192,7 +192,7 @@ class FireBaseConnector {
                 Log.e(Wall_Tag, "Failed in downloading")
             }
         }.addOnFailureListener {
-            Log.e(Wall_Tag, "Image Upload fail")
+            Log.e(Wall_Tag, "Image Upload fail " + it.toString())
         }
 
         return sd

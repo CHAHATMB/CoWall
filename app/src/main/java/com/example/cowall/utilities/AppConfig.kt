@@ -1,6 +1,7 @@
 package com.example.cowall.utilities
 
 import android.app.Application
+import com.example.cowall.dependencyinjection.firebaseModule
 import com.example.cowall.dependencyinjection.repositoryModule
 import com.example.cowall.dependencyinjection.viewModelModule
 import org.koin.android.ext.koin.androidContext
@@ -13,7 +14,7 @@ class AppConfig :Application() {
 
         startKoin {
             androidContext(this@AppConfig)
-            modules(listOf(repositoryModule, viewModelModule))
+            modules(listOf(repositoryModule, viewModelModule, firebaseModule))
         }
     }
 
