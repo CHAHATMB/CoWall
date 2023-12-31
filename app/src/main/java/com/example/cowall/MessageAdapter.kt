@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.cowall.data.MessageModel
 
 class MessageAdapter(val context: Context, val messageList:ArrayList<MessageModel>): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     class SendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){

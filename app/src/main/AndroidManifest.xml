@@ -40,7 +40,7 @@
 
         </activity>
         <activity
-            android:name=".ChatRoomActivity"
+            android:name=".activities.ChatRoomActivity"
             android:exported="true" />
         <activity
             android:name=".SplashScreenActivity"

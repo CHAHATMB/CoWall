@@ -41,7 +41,6 @@ class EditImageViewModel(private val editImageRepository: EditImageRepository) :
     private fun emitImagePreviewUiState( isLoading: Boolean, bitmap: Bitmap? = null, error: String? = null){
         val dataState = ImagePreviewDataState(isLoading, bitmap, error)
         imagePreviewDataState.postValue(dataState)
-
     }
 
     private fun emitUiState(
@@ -51,11 +50,6 @@ class EditImageViewModel(private val editImageRepository: EditImageRepository) :
     ) {
         val dataState = ImagePreviewDataState(isLoading, bitmap, error)
         imagePreviewDataState.value = dataState
-        data class ImagePreviewDataState(
-            val isLoading: Boolean,
-            val bitmap: Bitmap?,
-            val error: String?
-        )
     }
 
     //endregion

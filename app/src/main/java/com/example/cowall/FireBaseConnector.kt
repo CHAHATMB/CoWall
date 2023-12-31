@@ -8,6 +8,8 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.cowall.data.MessageModel
+import com.example.cowall.data.UserChat
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -17,8 +19,6 @@ import java.io.File
 import java.util.*
 import com.google.gson.Gson
 import kotlin.collections.ArrayList
-
-data class UserChat(val userUniqueId: String, val uri: String)
 
 class FireBaseConnector {
     interface MessageUpdateCallback {
@@ -119,33 +119,67 @@ class FireBaseConnector {
         }
     }
 
-    fun getImageFromFirebase(imgPath : String = "images/image.jpg",senderId: String="3245",flag:Boolean=true){
+    fun getImageFromFirebase(imgPath: String = "images/image.jpg", senderId: String = "3245", flag: Boolean = true) {
         val storageRef = Firebase.storage.reference
-        val imageRef = storageRef.child("file/$roomId").child(imgPath) // Replace with your actual image path
+        val imageRef = storageRef.child("file/$roomId").child(imgPath)
 
-        val localFile = File.createTempFile("tempImage", "jpg")
-        Log.d(Wall_Tag,"downloaded on the way " + imgPath)
-        try {
-            imageRef.getFile(localFile).addOnSuccessListener {
-                // Image downloaded successfully
-                messageUpdateCallback?.onMessageUpdated(MessageModel("message hell", Uri.fromFile(File(localFile.absolutePath)),senderId))
-                if(flag){
-                    // Now set it as wallpaper
-                    setWallpaper(localFile.absolutePath)
-                }
-                Log.d(Wall_Tag,"downloaded sucesffuly ")
-            }.addOnFailureListener {
-                // Handle the failure to download the image
-                Log.e(Wall_Tag,it.toString())
-            }
-        } catch ( e:Exception ) {
-            Log.d(Wall_Tag, "ecexpetion ${e}")
-        } finally {
-            Log.d(Wall_Tag, "nothing happens")
+        // Use permanent storage directory
+        val permanentStorageDirectory = File(context.getExternalFilesDir(null), "images")
+        if (!permanentStorageDirectory.exists()) {
+            permanentStorageDirectory.mkdirs()
         }
 
+        val permanentFile = File(permanentStorageDirectory, imgPath)
+        Log.d(Wall_Tag, "Checking if file exists: ${permanentFile.absolutePath}")
 
+        // Check if the file exists in permanent storage
+        if (permanentFile.exists()) {
+            // Image already exists in permanent storage, use it
+            messageUpdateCallback?.onMessageUpdated(
+                MessageModel(
+                    "Send from ${senderId}",
+                    Uri.fromFile(permanentFile),
+                    senderId
+                )
+            )
+
+            if (flag) {
+                // Now set it as wallpaper
+                setWallpaper(permanentFile.absolutePath)
+            }
+
+            Log.d(Wall_Tag, "Image already exists in permanent storage")
+        } else {
+            // File doesn't exist in permanent storage, download it
+            Log.d(Wall_Tag, "File doesn't exist, downloading...")
+
+            try {
+                imageRef.getFile(permanentFile).addOnSuccessListener {
+                    // Image downloaded successfully
+                    messageUpdateCallback?.onMessageUpdated(
+                        MessageModel(
+                            "Send from $senderId",
+                            Uri.fromFile(permanentFile),
+                            senderId
+                        )
+                    )
+
+                    if (flag) {
+                        // Now set it as wallpaper
+                        setWallpaper(permanentFile.absolutePath)
+                    }
+
+                    Log.d(Wall_Tag, "Downloaded successfully to permanent storage")
+                }.addOnFailureListener {
+                    // Handle the failure to download the image
+                    Log.e(Wall_Tag, it.toString())
+                }
+            } catch (e: Exception) {
+                Log.d(Wall_Tag, "Exception: $e")
+            }
+        }
     }
+
 
     fun sendMessage(childPath:String, msg:String){
         database.reference.child(childPath)

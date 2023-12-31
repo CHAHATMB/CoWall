@@ -8,7 +8,6 @@ import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
-import com.example.cowall.ChatRoomActivity
 import com.example.cowall.adapters.ImageFiltersAdapter
 import com.example.cowall.data.ImageFilter
 import com.example.cowall.databinding.ActivityEditImageBinding

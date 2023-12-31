@@ -1,4 +1,4 @@
-package com.example.cowall
+package com.example.cowall.data
 
 import android.net.Uri
 

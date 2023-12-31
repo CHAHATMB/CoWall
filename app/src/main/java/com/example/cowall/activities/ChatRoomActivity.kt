@@ -1,17 +1,24 @@
-package com.example.cowall
+package com.example.cowall.activities
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.cowall.activities.EditImageActivity
+import com.example.cowall.CameraActivity
+import com.example.cowall.FireBaseConnector
+import com.example.cowall.MessageAdapter
+import com.example.cowall.data.MessageModel
+import com.example.cowall.adapters.ImageFiltersAdapter
 import com.example.cowall.databinding.ActivityChatRoomBinding
+import com.example.cowall.utilities.displayToast
+import com.example.cowall.utilities.printLog
+import com.example.cowall.viewmodel.ChatRoomViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import java.io.File
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCallback {
 
@@ -20,6 +27,7 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
     var REQUEST_IMAGE_CAPTURE = 340
     private lateinit var adapter : MessageAdapter
     private lateinit var fbc : FireBaseConnector
+    private val viewModel: ChatRoomViewModel by viewModel()
 
     val messages = ArrayList<MessageModel>()
 
@@ -28,7 +36,8 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
         binding = ActivityChatRoomBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
-        cameraButton = binding.cameraButton
+
+//        cameraButton = binding.cameraButton
         binding.cameraButton.setOnClickListener {
             onCameraButtonPress()
         }
@@ -41,19 +50,40 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
         adapter = MessageAdapter(this, messages)
         binding.chatRoomRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.chatRoomRecyclerView.adapter = adapter
+//        setUpObserver()
 
         intent.getParcelableExtra<Uri>("filteredImage")?.let{
                 imageUri ->
-            adapter.addMessage(MessageModel("Hi there sajan!", imageUri,FireBaseConnector.userUniqueId))
+            adapter.addMessage(
+                MessageModel("Hi there sajan!", imageUri,
+                    FireBaseConnector.userUniqueId
+                )
+            )
             fbc.uploadImageToFirebase(imageUri)
         }
 
+    }
+    fun setUpObserver(){
+        viewModel.messages.observe(this) {
+            printLog("Getting Messages! : ${it.toString()}")
+            val messageList = it ?: return@observe
+
+//            binding.imageFiltersProgressBar.visibility =
+//                if (imageFilterDataState.isLoading) View.VISIBLE else View.GONE
+            messageList.let{ messages->
+                val adapter = MessageAdapter(this, ArrayList(messages))
+                binding.chatRoomRecyclerView.adapter = adapter
+                binding.chatRoomRecyclerView.layoutManager = LinearLayoutManager(this)
+            }
+        }
+
+        viewModel.getAllMessages()
     }
     override fun onResume(){
         super.onResume()
         intent.getParcelableExtra<Uri>("filteredImage")?.let{
                 imageUri ->
-            adapter.addMessage(MessageModel("hi stupid!", imageUri,FireBaseConnector.userUniqueId))
+            adapter.addMessage(MessageModel("hi stupid!", imageUri, FireBaseConnector.userUniqueId))
             fbc.uploadImageToFirebase(imageUri)
         }
     }
