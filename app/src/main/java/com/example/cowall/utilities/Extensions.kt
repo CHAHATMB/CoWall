@@ -14,6 +14,10 @@ fun View.show(){
     this.visibility = View.VISIBLE
 }
 
+fun View.hide(){
+    this.visibility = View.INVISIBLE
+}
+
 fun printLog(message: String){
     Log.d("Walld", message)
 }

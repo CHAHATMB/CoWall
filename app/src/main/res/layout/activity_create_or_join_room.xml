@@ -5,73 +5,223 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".CreateOrJoinRoom"
-    android:background="@drawable/background">
+    android:background="#fff"
+    android:id="@+id/rootConstraintLayout">
 
-    <TextView
-        android:id="@+id/yourRoomId"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Room Id"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.513"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.319" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="67dp"
-        android:layout_height="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:text="OR"
-        android:gravity="center"
-        app:layout_constraintBottom_toTopOf="@+id/editRoomId"
-        app:layout_constraintEnd_toEndOf="@+id/yourRoomId"
-        app:layout_constraintStart_toStartOf="@+id/yourRoomId"
-        app:layout_constraintTop_toBottomOf="@+id/yourRoomId" />
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/editRoomId"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="88dp"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:minHeight="48dp"
-        app:layout_constraintEnd_toEndOf="@+id/yourRoomId"
-        app:layout_constraintHorizontal_bias="0.511"
-        app:layout_constraintStart_toStartOf="@+id/yourRoomId"
-        app:layout_constraintTop_toBottomOf="@+id/yourRoomId"
-        android:hint="Enter Unique Code"/>
-
-    <Button
-        android:id="@+id/submitButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Submit"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/createRoomCL"
+        android:layout_width="parent"
+        android:layout_height="parent"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editRoomId"
-        app:layout_constraintVertical_bias="0.115" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:inputType="textPersonName"
-        android:minHeight="48dp"
-        android:hint="hi"
-        app:layout_constraintBottom_toTopOf="@+id/editRoomId"
-        app:layout_constraintEnd_toEndOf="@+id/yourRoomId"
-        app:layout_constraintStart_toStartOf="@+id/yourRoomId"
-        app:layout_constraintTop_toBottomOf="@+id/yourRoomId">
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Join or Create Room"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textColor="#D600A7"
+            android:textSize="35dp"
+            app:fontFamily="cursive"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.05" />
+
+        <ImageButton
+            android:id="@+id/exitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_baseline_exit"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@id/titleText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/titleText"
+            tools:ignore="SpeakableTextPresentCheck" />
 
         <com.google.android.material.textfield.TextInputEditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:id="@+id/yourName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_shape_light"
+            android:ems="10"
+            android:gravity="center"
+            android:hint="Your Name"
+            android:inputType="textPersonName"
+            android:minHeight="48dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.2" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editRoomId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/button_shape_light"
+            android:ems="10"
+            android:gravity="center"
+            android:hint="Partner's Code"
+            android:inputType="textPersonName"
+            android:minHeight="48dp"
+            app:layout_constraintEnd_toEndOf="@+id/yourName"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="@+id/yourName"
+            app:layout_constraintTop_toBottomOf="@+id/yourName" />
+
+        <TextView
+            android:id="@+id/orText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:gravity="center"
+            android:text="OR"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textColor="#D600A7"
+            app:fontFamily="cursive"
+            app:layout_constraintEnd_toEndOf="@id/editRoomId"
+            app:layout_constraintStart_toStartOf="@id/editRoomId"
+            app:layout_constraintTop_toBottomOf="@id/editRoomId" />
+
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constraintLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            app:layout_constraintEnd_toEndOf="@+id/orText"
+            app:layout_constraintStart_toStartOf="@+id/orText"
+            app:layout_constraintTop_toBottomOf="@+id/orText">
+
+            <TextView
+                android:id="@+id/yourRoomId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/button_dark_shape"
+                android:gravity="center|left"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:text="share your code : "
+                android:textColor="#fff"
+                android:textSize="20dp"
+                app:fontFamily="cursive"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingRight="15dp"
+                android:src="@drawable/ic_arrow_share_icon"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="60dp"
+            android:background="@drawable/button_dark_shape"
+            android:shadowColor="#A8A8A8"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="5"
+            android:text="Create"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="@+id/constraintLayout"
+            app:layout_constraintStart_toStartOf="@+id/constraintLayout"
+            app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:gravity="left"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:text="You can leave Partner's Code field as empty if your partner enter your code in their App"
+            android:textColor="#5E5D5D"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/submitButton"
+            app:layout_constraintStart_toStartOf="@+id/submitButton" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/waitingRoomCS"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible"
+        tools:context=".CreateOrJoinRoom"
+        android:background="#D600A7">
+
+        <TextView
+            android:id="@+id/titleTextCS"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wait for your partner to join"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textColor="#fff"
+            android:textSize="30dp"
+            app:fontFamily="cursive"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.05" />
+
+        <ImageButton
+            android:id="@+id/exitButtonCS"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:src="@drawable/ic_baseline_exit"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="@id/titleTextCS"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/titleTextCS"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+
+
+
+            <TextView
+                android:id="@+id/yourRoomIdCS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_margin="50dp"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:text="Share your code "
+                android:textColor="#fff"
+                android:textSize="40dp"
+                app:fontFamily="cursive"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

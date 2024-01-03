@@ -173,7 +173,6 @@ class MainActivity : AppCompatActivity() {
             }
             selectedImage?.let { imgAdd = firebaseconn.uploadImageToFirebase(it) }
             displaySelectedImage(selectedImage)
-
         }
     }
 
