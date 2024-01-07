@@ -199,6 +199,24 @@ class FireBaseConnector {
                 })
     }
 
+
+    fun setProperty(childPath:String, msg:String){
+        database.reference.child(childPath)
+            .setValue(
+                msg,
+                DatabaseReference.CompletionListener { databaseError, databaseReference ->
+                    if (databaseError != null) {
+                        Log.d(
+                            Wall_Tag, "Unable to write message to database.",
+                            databaseError.toException()
+                        )
+                        return@CompletionListener
+                    } else {
+                        Log.d(Wall_Tag, "sab changa si bhaiyanu")
+                    }
+                })
+    }
+
     fun sendUri(uri:String){
         // Convert object to JSON
         val userChat = UserChat(userUniqueId, uri)

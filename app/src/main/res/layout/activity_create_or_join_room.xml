@@ -10,9 +10,9 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/createRoomCL"
-        android:layout_width="parent"
-        android:layout_height="parent"
-        android:visibility="invisible"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -33,19 +33,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.05" />
-
-        <ImageButton
-            android:id="@+id/exitButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="20dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_baseline_exit"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="@id/titleText"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/titleText"
-            tools:ignore="SpeakableTextPresentCheck" />
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/yourName"
@@ -166,9 +153,9 @@
         android:id="@+id/waitingRoomCS"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible"
-        tools:context=".CreateOrJoinRoom"
-        android:background="#D600A7">
+        android:background="#D600A7"
+        android:visibility="invisible"
+        tools:context=".CreateOrJoinRoom">
 
         <TextView
             android:id="@+id/titleTextCS"
@@ -202,24 +189,22 @@
             tools:ignore="SpeakableTextPresentCheck" />
 
 
-
-
-            <TextView
-                android:id="@+id/yourRoomIdCS"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:layout_margin="50dp"
-                android:paddingStart="15dp"
-                android:paddingEnd="15dp"
-                android:text="Share your code "
-                android:textColor="#fff"
-                android:textSize="40dp"
-                app:fontFamily="cursive"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+        <TextView
+            android:id="@+id/yourRoomIdCS"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="50dp"
+            android:gravity="center"
+            android:paddingStart="15dp"
+            android:paddingEnd="15dp"
+            android:text="Share your code "
+            android:textColor="#fff"
+            android:textSize="40dp"
+            app:fontFamily="cursive"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
