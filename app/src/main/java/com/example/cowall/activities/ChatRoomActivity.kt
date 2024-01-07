@@ -15,12 +15,15 @@ import com.example.cowall.data.MessageModel
 import com.example.cowall.adapters.ImageFiltersAdapter
 import com.example.cowall.databinding.ActivityChatRoomBinding
 import com.example.cowall.utilities.displayToast
+import com.example.cowall.utilities.hide
 import com.example.cowall.utilities.printLog
+import com.example.cowall.utilities.show
 import com.example.cowall.viewmodel.ChatRoomViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import org.koin.android.ext.android.bind
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCallback {
+class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCallback, MessageAdapter.OnItemClickLongListener {
 
     private lateinit var binding: ActivityChatRoomBinding
     private lateinit var cameraButton: FloatingActionButton
@@ -47,7 +50,7 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
         fbc.setMessageUpdateCallback(this)
         fbc.getAllMessageData()
 
-        adapter = MessageAdapter(this, messages)
+        adapter = MessageAdapter(this, messages, this)
         binding.chatRoomRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.chatRoomRecyclerView.adapter = adapter
 //        setUpObserver()
@@ -55,12 +58,13 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
         intent.getParcelableExtra<Uri>("filteredImage")?.let{
                 imageUri ->
             adapter.addMessage(
-                MessageModel("Hi there sajan!", imageUri,
+                MessageModel("You set a pic!", imageUri,
                     FireBaseConnector.userUniqueId
                 )
             )
             fbc.uploadImageToFirebase(imageUri)
         }
+        fetchAndSetUserName()
 
     }
     fun setUpObserver(){
@@ -71,7 +75,7 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
 //            binding.imageFiltersProgressBar.visibility =
 //                if (imageFilterDataState.isLoading) View.VISIBLE else View.GONE
             messageList.let{ messages->
-                val adapter = MessageAdapter(this, ArrayList(messages))
+                val adapter = MessageAdapter(this, ArrayList(messages), this)
                 binding.chatRoomRecyclerView.adapter = adapter
                 binding.chatRoomRecyclerView.layoutManager = LinearLayoutManager(this)
             }
@@ -122,6 +126,20 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
                     fbc.uploadImageToFirebase(it)
                 }
             }
+        }
+    }
+
+    fun fetchAndSetUserName(){
+        fbc.getPatnerUserName(){ partnerUserName ->
+            binding.partnerUserNameText.text = partnerUserName
+        }
+    }
+
+    override fun onItemLongClicked(item: MessageModel) {
+        binding.imagePreview.setImageURI(item.imageUri)
+        binding.imagePreview.show()
+        binding.imagePreview.setOnClickListener{
+            binding.imagePreview.hide()
         }
     }
 

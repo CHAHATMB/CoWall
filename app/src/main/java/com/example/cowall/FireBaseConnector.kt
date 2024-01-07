@@ -3,13 +3,16 @@ package com.example.cowall
 import android.Manifest.permission.SET_WALLPAPER
 import android.app.WallpaperManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.cowall.data.MessageModel
+import com.example.cowall.data.User
 import com.example.cowall.data.UserChat
+import com.example.cowall.utilities.printLog
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -36,6 +39,7 @@ class FireBaseConnector {
     companion object {
         lateinit var userUniqueId : String
         lateinit var roomId : String
+        lateinit var partnerUserName : String
 
         fun setUniqueIds(userUniqueId: String, roomId:String){
             this.roomId = roomId
@@ -135,9 +139,11 @@ class FireBaseConnector {
         // Check if the file exists in permanent storage
         if (permanentFile.exists()) {
             // Image already exists in permanent storage, use it
+            val msg = if(senderId!= userUniqueId) "$partnerUserName set a pic!" else "You set a Pic!"
             messageUpdateCallback?.onMessageUpdated(
+
                 MessageModel(
-                    "Send from ${senderId}",
+                    msg,
                     Uri.fromFile(permanentFile),
                     senderId
                 )
@@ -305,5 +311,43 @@ class FireBaseConnector {
                     // Handle error
                 }
             })
+    }
+    fun getPatnerUserName( callback: (String?) -> Unit){
+        val roomRef = database.getReference("chatRooms/$roomId/participants")
+        roomRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Handle the event when participants change
+                // Notify the room creator or update UI
+                val participants = snapshot.children.map { it.key }.toList()
+                printLog("Participants: $participants")
+                    for (participantSnapshot in snapshot.children) {
+                        val partnerUserId: String? = participantSnapshot.key
+                        val isJoined = participantSnapshot.value as Boolean
+                        if(partnerUserId != userUniqueId ){
+                            val userReference = database.reference.child("userName").child(partnerUserId!!)
+
+                            userReference.addListenerForSingleValueEvent(object : ValueEventListener {
+                                override fun onDataChange(snapshot: DataSnapshot) {
+                                    // Check if the user exists
+                                    val userName:String = snapshot.getValue() as String
+                                    partnerUserName = userName
+                                    callback.invoke(userName)
+                                }
+
+                                override fun onCancelled(error: DatabaseError) {
+                                    callback.invoke("UserName")
+                                }
+                            })
+                        }
+                    }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle the error
+                Log.e("ChatRoomActivity", "Error: $error")
+            }
+        })
+
+
     }
 }

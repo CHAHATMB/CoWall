@@ -10,7 +10,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cowall.data.MessageModel
 
-class MessageAdapter(val context: Context, val messageList:ArrayList<MessageModel>): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class MessageAdapter(val context: Context, val messageList:ArrayList<MessageModel>, private val listener: OnItemClickLongListener): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     class SendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
         val sendMess = itemView.findViewById<TextView>(R.id.textViewSend)
         val sentImageView = itemView.findViewById<ImageView>(R.id.sentImageView)
@@ -22,6 +22,10 @@ class MessageAdapter(val context: Context, val messageList:ArrayList<MessageMode
         val receiveImageView = itemView.findViewById<ImageView>(R.id.receiveImageView)
 
 
+    }
+
+    interface OnItemClickLongListener {
+        fun onItemLongClicked(item: MessageModel)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -37,6 +41,10 @@ class MessageAdapter(val context: Context, val messageList:ArrayList<MessageMode
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val currMess = messageList[position]
+        holder.itemView.setOnLongClickListener{
+            listener.onItemLongClicked(currMess)
+            return@setOnLongClickListener false
+        }
         if(holder.javaClass == SendViewHolder::class.java){
             val view = holder as SendViewHolder
             view.sendMess.text = currMess.message

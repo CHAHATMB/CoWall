@@ -193,6 +193,10 @@ class CreateOrJoinRoom : AppCompatActivity() {
                                 putString("joinedRoomId", roomId)
                                 apply()
                             }
+                            with(sharedPref.edit()) {
+                                putString("partnerName", userId)
+                                apply()
+                            }
                             val intent = Intent(this@CreateOrJoinRoom.applicationContext, MainActivity::class.java)
                             startActivity(intent)
                             finish()
@@ -214,10 +218,6 @@ class CreateOrJoinRoom : AppCompatActivity() {
             }
         }
         roomRef.addValueEventListener(valueEventListener)
-
-        // Simulate a user joining the chat room
-        val user = User("user1234", "Jon Joo")
-        joinChatRoom(user)
     }
     private fun joinChatRoom(user: User) {
         // Add the user to the participants list in the chat room
