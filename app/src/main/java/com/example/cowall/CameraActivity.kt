@@ -82,9 +82,9 @@ class CameraActivity : AppCompatActivity() {
         }
 
         val rotation = when (cameraSelector) {
-            CameraSelector.DEFAULT_BACK_CAMERA -> Surface.ROTATION_90
-            CameraSelector.DEFAULT_FRONT_CAMERA -> Surface.ROTATION_180
-            else -> Surface.ROTATION_90 // Default to back camera rotation
+            CameraSelector.DEFAULT_BACK_CAMERA -> Surface.ROTATION_270
+            CameraSelector.DEFAULT_FRONT_CAMERA -> Surface.ROTATION_90
+            else -> Surface.ROTATION_0 // Default to back camera rotation
         }
 
         imageAnalyzer = ImageAnalysis.Builder()
@@ -94,11 +94,11 @@ class CameraActivity : AppCompatActivity() {
 
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .setTargetRotation(rotation)
+//            .setTargetRotation(rotation)
             .build()
 
         val preview: Preview = Preview.Builder()
-            .setTargetRotation(rotation)
+//            .setTargetRotation(rotation)
             .build()
         preview.targetRotation = Surface.ROTATION_180
         preview.setSurfaceProvider(binding.surfaceView.surfaceProvider)
@@ -213,69 +213,70 @@ class CameraActivity : AppCompatActivity() {
         val outputFileOptions = ImageCapture.OutputFileOptions.Builder(outputPath).build()
         Log.d("Walld","Capturing photo jgh")
         imageCapture.flashMode = flashMode
-        imageCapture.takePicture(
-            cameraExecutor,
-            object : ImageCapture.OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
-                    imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
-                    printLog("We code image "+ image.imageInfo.rotationDegrees )
-                    // Get the captured image as a bitmap
-//                    image = getCorrectionMatrix(image, binding.surfaceView)
-                    val bitmap = image.toBitmap()
-
-
-
-                    // Compress the bitmap
-                    val compressedBitmap = compressBitmap(bitmap!!, 10) // Adjust quality level as needed
-                    Log.d("Walld","Compressing the image on go")
-                    val compressedImageFile = getCompressedImageFile()
-                    compressedBitmap.compress(Bitmap.CompressFormat.JPEG, 10, FileOutputStream(compressedImageFile))
-                    outputPath = compressedImageFile
-
-                    // Get the orientation of the captured image
-                    val ei = ExifInterface(outputPath.absolutePath)
-                    val orientation = ei.getAttributeInt(
-                        ExifInterface.TAG_ORIENTATION,
-                        ExifInterface.ORIENTATION_UNDEFINED
-                    )
-                    // Rotate the bitmap if necessary
-                    val rotatedBitmap = rotateImage(bitmap, 90f)
-                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 10, FileOutputStream(compressedImageFile))
-
-//                    displayCapturedImage(rotatedBitmap,outputPath)
-
-                    image.close()
-                    sendImage()
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    exception.printStackTrace()
-                }
-            }
-        )
 
 //        imageCapture.takePicture(
-//            outputFileOptions,
 //            cameraExecutor,
-//            object : ImageCapture.OnImageSavedCallback {
-//                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-//                    val bitmap = BitmapFactory.decodeFile(outputFileResults.savedUri?.path)
-////                    val filteredBitmap = applyFilter(bitmap)
-//                    Log.d("Walld","Capturing photo")
-//                    val compressedBitmap = compressBitmap(bitmap, 50)
-//                    // Display the filtered photo
-////                    binding.photoImageView.setImageBitmap(filteredBitmap)
-////                    binding.photoImageView.visibility = View.VISIBLE
-//                    displayCapturedImage(compressedBitmap,outputPath)
-//                    cameraProvider.unbindAll()
+//            object : ImageCapture.OnImageCapturedCallback() {
+//                override fun onCaptureSuccess(image: ImageProxy) {
+//                    imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
+//                    printLog("We code image "+ image.imageInfo.rotationDegrees )
+//                    // Get the captured image as a bitmap
+////                    image = getCorrectionMatrix(image, binding.surfaceView)
+//                    val bitmap = image.toBitmap()
+//
+//
+//
+//                    // Compress the bitmap
+//                    val compressedBitmap = compressBitmap(bitmap!!, 10) // Adjust quality level as needed
+//                    Log.d("Walld","Compressing the image on go")
+//                    val compressedImageFile = getCompressedImageFile()
+//                    compressedBitmap.compress(Bitmap.CompressFormat.JPEG, 10, FileOutputStream(compressedImageFile))
+//                    outputPath = compressedImageFile
+//
+//                    // Get the orientation of the captured image
+//                    val ei = ExifInterface(outputPath.absolutePath)
+//                    val orientation = ei.getAttributeInt(
+//                        ExifInterface.TAG_ORIENTATION,
+//                        ExifInterface.ORIENTATION_UNDEFINED
+//                    )
+//                    // Rotate the bitmap if necessary
+//                    val rotatedBitmap = rotateImage(bitmap, 90f)
+//                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 10, FileOutputStream(compressedImageFile))
+//
+//                    image.close()
+//                    sendImage()
 //                }
 //
 //                override fun onError(exception: ImageCaptureException) {
-//                    // Handle error
-//                    Log.e("Walld",exception.toString())
+//                    exception.printStackTrace()
 //                }
 //            }
 //        )
+
+        imageCapture.takePicture(
+            outputFileOptions,
+            cameraExecutor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+//                    val bitmap = BitmapFactory.decodeFile(outputFileResults.savedUri?.path)
+//                    outputPath = outputFileResults
+//                    val filteredBitmap = applyFilter(bitmap)
+                    Log.d("Walld","Captured photo ${outputFileResults.savedUri?.path}")
+//                    val compressedBitmap = compressBitmap(bitmap, 50)
+                    // Display the filtered photo
+//                    binding.photoImageView.setImageBitmap(filteredBitmap)
+//                    binding.photoImageView.visibility = View.VISIBLE
+//                    displayCapturedImage(compressedBitmap,outputPath)
+                    sendImage(outputFileResults.savedUri!!)
+                    cameraProvider.unbindAll()
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    // Handle error
+                    Log.e("Walld",exception.toString())
+                }
+            }
+        )
     }
     private fun rotateImage(source: Bitmap, angle: Float): Bitmap {
         val matrix = Matrix()

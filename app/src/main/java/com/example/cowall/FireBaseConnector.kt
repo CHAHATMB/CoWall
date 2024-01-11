@@ -5,8 +5,11 @@ import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.cowall.data.MessageModel
@@ -21,6 +24,7 @@ import com.google.firebase.storage.ktx.storage
 import java.io.File
 import java.util.*
 import com.google.gson.Gson
+import java.io.ByteArrayOutputStream
 import kotlin.collections.ArrayList
 
 class FireBaseConnector {
@@ -235,7 +239,9 @@ class FireBaseConnector {
     }
     fun uploadImageToFirebase(selectedImage: Uri) : String {
         val sd = "${UUID.randomUUID()}.jpg"
-        val uploadTask = storageRef.reference.child("file/$roomId/$sd").putFile(selectedImage)
+        val compressedImageUri = compressImage(selectedImage, sd) ?: return "" // Handle compression failure
+        printLog("selected $selectedImage and comp $compressedImageUri")
+        val uploadTask = storageRef.reference.child("file/$roomId/$sd").putFile(compressedImageUri)
         // On success, download the file URL and display it
         uploadTask.addOnSuccessListener {
             // using glide library to display the image
@@ -269,6 +275,31 @@ class FireBaseConnector {
 //                // ...
 //            }
 //        }
+    }
+
+    private fun compressImage(selectedImage: Uri, imagePath: String): Uri? {
+        val file = File(selectedImage.path!!) // Get the file from the URI
+        printLog("iamge uurri $selectedImage, $file, \n ${file.absolutePath}")
+        return try {
+            val options = BitmapFactory.Options()
+            options.inPreferredConfig = Bitmap.Config.RGB_565
+//            val bitmap = BitmapFactory.decodeFile(file.path, options)
+            val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), selectedImage)
+
+            printLog("bitmap, ${bitmap.toString()}")
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream) // Compress to 50% quality
+            val compressedImage = File(context.getExternalFilesDir(null), "images/$imagePath")
+            compressedImage.outputStream().use {
+                it.write(stream.toByteArray())
+            }
+            // Return the URI of the compressed image
+            Uri.fromFile(compressedImage)
+        } catch (e: Exception) {
+            // Handle any errors during compression
+            Log.e(Wall_Tag, "Image compression failed: $e")
+            null
+        }
     }
 
     fun getMessageCount(child: String) : Int {
@@ -320,26 +351,26 @@ class FireBaseConnector {
                 // Notify the room creator or update UI
                 val participants = snapshot.children.map { it.key }.toList()
                 printLog("Participants: $participants")
-                    for (participantSnapshot in snapshot.children) {
-                        val partnerUserId: String? = participantSnapshot.key
-                        val isJoined = participantSnapshot.value as Boolean
-                        if(partnerUserId != userUniqueId ){
-                            val userReference = database.reference.child("userName").child(partnerUserId!!)
+                for (participantSnapshot in snapshot.children) {
+                    val partnerUserId: String? = participantSnapshot.key
+                    val isJoined = participantSnapshot.value as Boolean
+                    if(partnerUserId != userUniqueId ){
+                        val userReference = database.reference.child("userName").child(partnerUserId!!)
 
-                            userReference.addListenerForSingleValueEvent(object : ValueEventListener {
-                                override fun onDataChange(snapshot: DataSnapshot) {
-                                    // Check if the user exists
-                                    val userName:String = snapshot.getValue() as String
-                                    partnerUserName = userName
-                                    callback.invoke(userName)
-                                }
+                        userReference.addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                // Check if the user exists
+                                val userName:String = snapshot.getValue() as String
+                                partnerUserName = userName
+                                callback.invoke(userName)
+                            }
 
-                                override fun onCancelled(error: DatabaseError) {
-                                    callback.invoke("UserName")
-                                }
-                            })
-                        }
+                            override fun onCancelled(error: DatabaseError) {
+                                callback.invoke("UserName")
+                            }
+                        })
                     }
+                }
             }
 
             override fun onCancelled(error: DatabaseError) {
