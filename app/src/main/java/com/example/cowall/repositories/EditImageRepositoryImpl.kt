@@ -3,6 +3,8 @@ package com.example.cowall.repositories
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
 import android.text.style.TtsSpan
@@ -20,7 +22,22 @@ import java.io.InputStream
 class EditImageRepositoryImpl(private val context: Context) : EditImageRepository {
     override suspend fun prepareImagePreview(imageUri: Uri): Bitmap? {
         getInputStreamFromUri (imageUri)?. let { inputStream ->
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                    // Get the orientation of the captured image
+                    val ei = imageUri.path?.let { ExifInterface(it) }
+                    val orientation = ei?.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_UNDEFINED
+                    )
+            val rotationAngle = when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+            var originalBitmap = BitmapFactory.decodeStream(inputStream)
+
+            // Rotate the bitmap if necessary
+          originalBitmap = rotateImage(originalBitmap, rotationAngle)
             val width = context.resources.displayMetrics.widthPixels
             val height = ((originalBitmap.height * width) / originalBitmap.width)
             return Bitmap.createScaledBitmap(originalBitmap, width, height, false)
@@ -170,5 +187,11 @@ class EditImageRepositoryImpl(private val context: Context) : EditImageRepositor
             flush()
             close()
         }
+    }
+
+    private fun rotateImage(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
     }
 }

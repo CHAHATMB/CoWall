@@ -16,6 +16,7 @@ import android.view.SurfaceView
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
+import androidx.camera.core.impl.PreviewConfig
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
@@ -94,19 +95,23 @@ class CameraActivity : AppCompatActivity() {
 
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-//            .setTargetRotation(rotation)
+            .setTargetRotation(Surface.ROTATION_0)
             .build()
 
+//        val previewConfig = PreviewConfig.apply{
+//            setScalingEnabled(false)
+//        }.build()
+
         val preview: Preview = Preview.Builder()
-//            .setTargetRotation(rotation)
+            .setTargetRotation(Surface.ROTATION_0)
             .build()
-        preview.targetRotation = Surface.ROTATION_180
+//        preview.targetRotation = Surface.ROTATION_180
         preview.setSurfaceProvider(binding.surfaceView.surfaceProvider)
 //        printLog("display rotation ${Display.getRotation(view)}")
         // Additional adjustment for front camera
-        if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
-            imageCapture.targetRotation = Surface.ROTATION_270
-        }
+//        if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
+//            imageCapture.targetRotation = Surface.ROTATION_270
+//        }
 
         cameraProvider.unbindAll()
 
