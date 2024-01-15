@@ -47,7 +47,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
 
             firebaseconn = FireBaseConnector()
             firebaseconn.initializeConnection(this.applicationContext)
-//            editTextWatch()
+            editTextWatch()
 
 
         sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
@@ -101,6 +101,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
         }
 
         val partnerRoomId = binding.editRoomId.text.toString()
+        printLog("usernamed m $userName roomdid $partnerRoomId")
         if(partnerRoomId.trim().isEmpty()) {
             onExitButtonPressed(true)
             lookForPartnerToJoin("roomId/$roomId")
@@ -108,7 +109,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
             Log.d(Wall_Tag, "sending mesage to firebase ${partnerRoomId}")
             firebaseconn.sendMessage("roomId/$partnerRoomId", userUniqueId)
             val user = User(userUniqueId, userName)
-            joinChatRoom(user)
+            joinChatRoom(user, partnerRoomId)
             Log.d(Wall_Tag, "after sending")
             with(sharedPref.edit()) {
                 putString("joinedRoomId", partnerRoomId)
@@ -164,6 +165,9 @@ class CreateOrJoinRoom : AppCompatActivity() {
 
     private fun onExitButtonPressed(boolean: Boolean = false){
         val value = if(boolean) "true" else "false"
+        if(!boolean && ::roomRef.isInitialized && ::valueEventListener.isInitialized){
+            roomRef.removeEventListener(valueEventListener)
+        }
         printLog("value s"+value)
         with (sharedPref.edit()) {
             putString(VARIABLE_WAITING_STATE, value)
@@ -181,7 +185,6 @@ class CreateOrJoinRoom : AppCompatActivity() {
                 // Notify the room creator or update UI
                 val participants = snapshot.children.map { it.key }.toList()
                 printLog("Participants: $participants")
-                if (!firstUserJoined) {
                     // Find out details of each participant
                     for (participantSnapshot in snapshot.children) {
                         val userId = participantSnapshot.key
@@ -197,18 +200,14 @@ class CreateOrJoinRoom : AppCompatActivity() {
                                 putString("partnerName", userId)
                                 apply()
                             }
+                            // Stop listening after processing the first user
+                            roomRef.removeEventListener(valueEventListener)
+
                             val intent = Intent(this@CreateOrJoinRoom.applicationContext, MainActivity::class.java)
                             startActivity(intent)
                             finish()
                             break
                         }
-                    }
-                    // Stop listening after processing the first user
-                    roomRef.removeEventListener(valueEventListener)
-                    firstUserJoined = true
-
-
-
                 }
             }
 
@@ -219,7 +218,12 @@ class CreateOrJoinRoom : AppCompatActivity() {
         }
         roomRef.addValueEventListener(valueEventListener)
     }
-    private fun joinChatRoom(user: User) {
+    private fun joinChatRoom(user: User, roomId: String? = null) {
+        if(roomId != null){
+            printLog("setting id $roomId")
+            FirebaseDatabase.getInstance().getReference("chatRooms/$roomId/participants").child(user.userId).setValue(true)
+            return
+        }
         // Add the user to the participants list in the chat room
         roomRef.child(user.userId).setValue(true)
     }

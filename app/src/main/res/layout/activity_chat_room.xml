@@ -17,27 +17,28 @@
         android:padding="8dp">
 
         <TextView
+            android:id="@+id/partnerUserNameText"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_gravity=""
-            android:text="Co Wall"
-            android:textColor="#fff"
-            android:textSize="25dp"
-            android:layout_weight="1"
-            app:fontFamily="sans-serif"
-            android:paddingLeft="10dp"/>
-        <TextView
-            android:id="@+id/partnerUserNameText"
-            android:layout_width = "0dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="end"
-            android:gravity="right"
             android:text="UserName"
             android:textColor="#fff"
             android:textSize="25dp"
             android:layout_weight="1"
             app:fontFamily="sans-serif"
-            android:paddingRight="10dp"/>
+            android:paddingLeft="10dp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/partnerUserNameText"-->
+<!--            android:layout_width = "0dp"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:layout_gravity="end"-->
+<!--            android:gravity="right"-->
+<!--            android:text="UserName"-->
+<!--            android:textColor="#fff"-->
+<!--            android:textSize="25dp"-->
+<!--            android:layout_weight="1"-->
+<!--            app:fontFamily="sans-serif"-->
+<!--            android:paddingRight="10dp"/>-->
     </androidx.appcompat.widget.LinearLayoutCompat>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chatRoomRecyclerView"
