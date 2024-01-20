@@ -118,7 +118,7 @@ class ChatRoomActivity : AppCompatActivity(), FireBaseConnector.MessageUpdateCal
                 if(it!=null) {
                     adapter.addMessage(
                         MessageModel(
-                            "Hi there sajan!",
+                            "You set a pic!",
                             it,
                             FireBaseConnector.userUniqueId
                         )

@@ -20,22 +20,22 @@
             android:padding="5dp">
 
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/sentImageView"
-                android:layout_width="90dp"
-                android:layout_height="90dp"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
                 android:layout_weight="1"
                 app:srcCompat="@drawable/new_wallpaper"
                 android:scaleType="centerCrop"
-                android:layout_centerHorizontal="true" />
+                android:radius="10dp"
+                android:layout_centerHorizontal="true"
+                app:shapeAppearanceOverlay="@style/RoundedSquare"/>
 
             <TextView
                 android:id="@+id/textViewSend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingTop="10dp"
-                android:paddingLeft="10dp"
-                android:paddingRight="20dp"
+                android:padding="10dp"
                 android:text="This is send message"
                 android:textColor="@color/white"
                 android:textSize="18dp" />
