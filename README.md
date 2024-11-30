@@ -57,10 +57,14 @@ Cowall is an Android application designed for friends, families, and couples to 
         <img src="/screenshot/waitingscreen.png" alt="Waiting" width="200"/><br>
         <sub><b>Waiting Screen</b></sub>
       </td>
+      <td align="center">
+        <img src="/screenshot/homescreen.png" alt="Home Screen" width="200"/><br>
+        <sub><b>Home Screen</b></sub>
+      </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="/screenshot/homescreen.png" alt="Home Screen" width="200"/><br>
+        <img src="/screenshot/homescreen1.png" alt="Home Screen" width="200"/><br>
         <sub><b>Home Screen</b></sub>
       </td>
       <td align="center">
@@ -70,6 +74,10 @@ Cowall is an Android application designed for friends, families, and couples to 
       <td align="center">
         <img src="/screenshot/filterscreen.png" alt="Filter Screen" width="200"/><br>
         <sub><b>Filter Screen</b></sub>
+      </td>
+      <td align="center">
+        <img src="/screenshot/lockscreen.png" alt="Lock Screen" width="200"/><br>
+        <sub><b>Lock Screen</b></sub>
       </td>
     </tr>
   </table>
