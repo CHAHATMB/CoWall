@@ -1,45 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
-    <RelativeLayout
+    android:layout_height="wrap_content"
+    android:gravity="end"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="4dp">
+
+    <LinearLayout
+        android:id="@+id/bubbleContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:layout_alignParentRight="true"
-        android:layout_marginTop="5dp"
+        android:orientation="vertical"
         android:background="@drawable/sent_background"
-        >
-
+        android:padding="6dp">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/replyPreviewContainer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="5dp">
+            android:background="@color/accent_dark"
+            android:padding="6dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
 
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/sentImageView"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:layout_weight="1"
-                app:srcCompat="@drawable/new_wallpaper"
-                android:scaleType="centerCrop"
-                android:radius="10dp"
-                android:layout_centerHorizontal="true"
-                app:shapeAppearanceOverlay="@style/RoundedSquare"/>
+            <View
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="@color/text_primary"
+                android:layout_marginEnd="6dp" />
 
             <TextView
-                android:id="@+id/textViewSend"
+                android:id="@+id/replyPreviewText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="10dp"
-                android:text="This is send message"
-                android:textColor="@color/white"
-                android:textSize="18dp" />
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
         </LinearLayout>
-    </RelativeLayout>
 
-</RelativeLayout>
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/sentImageView"
+            android:layout_width="240dp"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/RoundedSquare"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/captionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="4dp"
+            android:paddingTop="4dp"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/textViewSend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="2dp"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingHorizontal="4dp">
+
+            <TextView
+                android:id="@+id/timestampText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <ImageView
+                android:id="@+id/statusIcon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_done"
+                app:tint="@color/status_tick" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/reactionsText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/reaction_pill_background"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -17,9 +17,9 @@ import com.example.cowall.data.MessageModel
 import com.example.cowall.data.UserChat
 import com.example.cowall.utilities.printLog
 import com.google.firebase.database.*
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
 import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.ktx.storage
+import com.google.firebase.storage.storage
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope

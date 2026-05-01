@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/receive_background"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/reactionHeart"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="\u2764\uFE0F"
+        android:textSize="24sp"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    <TextView
+        android:id="@+id/reactionLaugh"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="\uD83D\uDE02"
+        android:textSize="24sp"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    <TextView
+        android:id="@+id/reactionWow"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="\uD83D\uDE2E"
+        android:textSize="24sp"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    <TextView
+        android:id="@+id/reactionCry"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="\uD83D\uDE22"
+        android:textSize="24sp"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    <TextView
+        android:id="@+id/reactionFire"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="\uD83D\uDD25"
+        android:textSize="24sp"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    <TextView
+        android:id="@+id/reactionThumbsUp"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="\uD83D\uDC4D"
+        android:textSize="24sp"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+</LinearLayout>

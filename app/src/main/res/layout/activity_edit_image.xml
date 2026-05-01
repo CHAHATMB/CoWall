@@ -12,7 +12,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent"
-        android:background="#0050aa"
+        android:background="@color/bg_surface"
         android:padding="8dp">
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/imageBack"

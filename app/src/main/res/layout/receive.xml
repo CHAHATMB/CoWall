@@ -1,43 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="4dp">
 
-    <RelativeLayout
+    <LinearLayout
+        android:id="@+id/bubbleContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:layout_alignParentLeft="true"
-        android:layout_marginTop="5dp"
-        android:background="@drawable/receive_background">
+        android:orientation="vertical"
+        android:background="@drawable/receive_background"
+        android:padding="6dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/senderNameText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
+            android:paddingHorizontal="4dp"
+            android:paddingBottom="2dp"
+            android:textColor="@color/accent"
+            android:textSize="11sp"
+            android:textStyle="bold" />
 
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/receiveImageView"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:layout_alignParentTop="true"
-                app:srcCompat="@drawable/new_wallpaper"
-                app:shapeAppearanceOverlay="@style/RoundedSquare"
-                />
+        <LinearLayout
+            android:id="@+id/replyPreviewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/bg_surface"
+            android:padding="6dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="@color/accent"
+                android:layout_marginEnd="6dp" />
 
             <TextView
-                android:id="@+id/textViewReceive"
+                android:id="@+id/replyPreviewText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="10dp"
-                android:text="This is receive message"
-                android:textColor="@color/white"
-                android:textSize="18dp" />
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
         </LinearLayout>
 
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/receiveImageView"
+            android:layout_width="240dp"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/RoundedSquare"
+            android:visibility="gone" />
 
-    </RelativeLayout>
+        <TextView
+            android:id="@+id/captionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="4dp"
+            android:paddingTop="4dp"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
-</RelativeLayout>
+        <TextView
+            android:id="@+id/textViewReceive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="2dp"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/timestampText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:paddingTop="4dp"
+            android:paddingHorizontal="4dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/reactionsText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/reaction_pill_background"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Legacy palette (kept for compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,18 +8,47 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Design system -->
+    <color name="bg_primary">#1A1A2E</color>
+    <color name="bg_surface">#16213E</color>
+    <color name="bg_card">#0F3460</color>
+    <color name="accent">#E94560</color>
+    <color name="accent_dark">#C73652</color>
+    <color name="text_primary">#EAEAEA</color>
+    <color name="text_secondary">#9E9E9E</color>
+    <color name="text_hint">#616161</color>
+    <color name="bubble_sent">#E94560</color>
+    <color name="bubble_received">#0F3460</color>
+    <color name="input_bg">#1E2A45</color>
+    <color name="divider">#2A3550</color>
+    <color name="icon_tint">#EAEAEA</color>
+    <color name="status_tick">#90CAF9</color>
+
+    <!-- Feedback state colors -->
+    <color name="success_green">#4CAF50</color>
+    <color name="success_green_dark">#388E3C</color>
+    <color name="error_red">#F44336</color>
+    <color name="error_red_dark">#D32F2F</color>
+    <color name="warning_amber">#FFC107</color>
+    <color name="warning_amber_dark">#FFA000</color>
+    <color name="info_blue">#2196F3</color>
+    <color name="snackbar_bg">#323232</color>
+    <color name="online_green">#66BB6A</color>
+
+    <!-- Legacy aliases used in existing layouts -->
     <color name="primary">#4ddad9</color>
     <color name="secondary">#b0cccb</color>
-    <color name="tertiary">#b2c8e8</color>
+    <color name="tertiary">#1A1A2E</color>
     <color name="error">#ffb4ab</color>
-    <color name="background">#191c1c</color>
-    <color name="onPrimary">#003736</color>
+    <color name="background">#1A1A2E</color>
+    <color name="onPrimary">#16213E</color>
     <color name="onSecondary">#1b3534</color>
     <color name="onTertiary">#1c324b</color>
     <color name="onError">#690005</color>
-    <color name="onBackground">#e0e3e2</color>
-    <color name="outline">#889392</color>
+    <color name="onBackground">#EAEAEA</color>
+    <color name="outline">#2A3550</color>
     <color name="primaryContainer">#6ff7f5</color>
-    <color name="send">#303F9F</color>
-    <color name="recieve">#00796B</color>
+    <color name="send">#E94560</color>
+    <color name="recieve">#0F3460</color>
 </resources>

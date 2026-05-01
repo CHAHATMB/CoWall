@@ -39,15 +39,18 @@ class ImageFiltersAdapter(private val imageFilters: List<ImageFilter>, private v
                     }
                 }
             }
+            val isSelected = selectedFilterPosition == position
             binding.textFilterName.setTextColor(
                 ContextCompat.getColor(
                     binding.textFilterName.context,
-                    if (selectedFilterPosition == position)
-                        R.color.black
-                    else
-                        R.color.white
+                    if (isSelected) R.color.accent else R.color.text_primary
                 )
             )
+            binding.imageFilterPreview.foreground = if (isSelected) {
+                ContextCompat.getDrawable(binding.root.context, R.drawable.filter_selected_border)
+            } else {
+                null
+            }
         }
     }
 

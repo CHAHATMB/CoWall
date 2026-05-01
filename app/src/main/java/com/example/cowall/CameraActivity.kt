@@ -8,12 +8,12 @@ import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.SurfaceView
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.core.impl.PreviewConfig
@@ -47,7 +47,26 @@ class CameraActivity : AppCompatActivity() {
     private var cameraState = false
     private var flashMode = ImageCapture.FLASH_MODE_OFF
     private val REQUEST_CODE_PERMISSION = 101
-    private val REQUEST_CODE_PICK_IMAGE = 102
+
+    private val editImageLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val uriString = result.data?.extras?.getString(EditImageActivity.KEY_FILTERED_IMAGE_URI)
+            if (!uriString.isNullOrEmpty()) {
+                setResult(RESULT_OK, Intent().apply {
+                    putExtra(EditImageActivity.KEY_FILTERED_IMAGE_URI, uriString)
+                })
+                finish()
+            }
+        }
+    }
+
+    private val galleryLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { sendImage(it) }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +88,9 @@ class CameraActivity : AppCompatActivity() {
         }
         binding.galleryButton.setOnClickListener(){
             onGalleryButtonPress()
+        }
+        binding.closeButton.setOnClickListener {
+            finish()
         }
         startCamera()
     }
@@ -258,6 +280,12 @@ class CameraActivity : AppCompatActivity() {
 //            }
 //        )
 
+        // Shutter flash effect
+        runOnUiThread {
+            binding.shutterFlash.alpha = 0.7f
+            binding.shutterFlash.animate().alpha(0f).setDuration(300).start()
+        }
+
         imageCapture.takePicture(
             outputFileOptions,
             cameraExecutor,
@@ -325,9 +353,9 @@ class CameraActivity : AppCompatActivity() {
         printLog("on send Image function")
         val imageUri = uri ?: Uri.fromFile(File(outputPath.absolutePath))
 
-        val resultIntent = Intent(this, EditImageActivity::class.java)
-        resultIntent.putExtra("capturedImage",  imageUri)
-        startActivityForResult(resultIntent,89)
+        editImageLauncher.launch(
+            Intent(this, EditImageActivity::class.java).putExtra("capturedImage", imageUri)
+        )
     }
 
     private fun compressBitmap(bitmap: Bitmap, quality: Int): Bitmap {
@@ -349,25 +377,6 @@ class CameraActivity : AppCompatActivity() {
         return File(directory, fileName)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 89 && resultCode == RESULT_OK && data != null) {
-
-            data.extras?.getString(EditImageActivity.KEY_FILTERED_IMAGE_URI).let{
-                Log.d("Walld","rwwecieve in cama${it}  " + data.extras)
-                Intent().also { camintent ->
-                    camintent.putExtra(EditImageActivity.KEY_FILTERED_IMAGE_URI, it)
-                    setResult(RESULT_OK, camintent)
-                    finish()
-                }
-            }
-        }
-        if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == RESULT_OK && data != null) {
-            val selectedImage = data.data
-            sendImage(data.data)
-
-        }
-    }
     fun onFlashButtonPress(){
         flashMode = when (flashMode){
             ImageCapture.FLASH_MODE_AUTO -> {
@@ -402,20 +411,13 @@ class CameraActivity : AppCompatActivity() {
             REQUEST_CODE_PERMISSION
         )
     }
-    private fun openImagePicker() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE)
-//        startActivity()
-    }
-
-    fun onGalleryButtonPress(){
+    fun onGalleryButtonPress() {
         if (checkPermission()) {
-            openImagePicker()
+            galleryLauncher.launch("image/*")
             printLog("opening image picker")
-
         } else {
             requestPermission()
-            printLog("requesting permsission")
+            printLog("requesting permission")
         }
     }
     fun onSwitchCameraButtonPress(){

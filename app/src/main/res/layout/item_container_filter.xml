@@ -23,7 +23,7 @@
         android:gravity="center"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:textSize="12dp"
         tools:text="Filter 1" />
 </LinearLayout>

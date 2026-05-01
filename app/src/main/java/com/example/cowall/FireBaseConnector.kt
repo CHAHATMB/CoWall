@@ -1,384 +1,400 @@
 package com.example.cowall
 
-import android.Manifest.permission.SET_WALLPAPER
-import android.app.WallpaperManager
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.example.cowall.data.MessageModel
 import com.example.cowall.data.User
 import com.example.cowall.data.UserChat
 import com.example.cowall.utilities.printLog
+import com.google.android.gms.auth.GoogleAuthUtil
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.firebase.database.*
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.database.database
+import com.google.firebase.Firebase
 import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.ktx.storage
+import com.google.firebase.storage.storage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.*
 import com.google.gson.Gson
-import java.io.ByteArrayOutputStream
-import kotlin.collections.ArrayList
 
-class FireBaseConnector {
-    interface MessageUpdateCallback {
-        fun onMessageUpdated(updatedMessages: MessageModel)
-        fun onMessageGet(updatedMessages: List<MessageModel>)
-    }
-    private var messageUpdateCallback: MessageUpdateCallback? = null
+class FireBaseConnector : ChatConnector {
 
+    private var messageUpdateCallback: ChatConnector.MessageUpdateCallback? = null
+    private var uploadCallback: ChatConnector.UploadCallback? = null
+    private var roomChatListener: ValueEventListener? = null
+    private var roomChatRef: DatabaseReference? = null
 
     private lateinit var database: FirebaseDatabase
     private lateinit var storageRef: FirebaseStorage
-    private val Wall_Tag = "Walld"
     lateinit var context: Context
 
     companion object {
-        lateinit var userUniqueId : String
-        lateinit var roomId : String
-        lateinit var partnerUserName : String
+        private const val LOG_TAG = "CoWall"
+        private var persistenceEnabled = false
 
-        fun setUniqueIds(userUniqueId: String, roomId:String){
-            this.roomId = roomId
-            this.userUniqueId = userUniqueId
+        lateinit var userUniqueId: String
+        lateinit var roomId: String
+        var partnerUserName: String = ""
+
+        fun setUniqueIds(userId: String, room: String) {
+            userUniqueId = userId
+            roomId = room
         }
 
-        fun getUserUniqueID (): String {
-            return userUniqueId
-        }
-
+        fun getUserUniqueID(): String = userUniqueId
     }
-    fun setMessageUpdateCallback(callback: MessageUpdateCallback) {
+
+    override fun setMessageUpdateCallback(callback: ChatConnector.MessageUpdateCallback?) {
         messageUpdateCallback = callback
     }
 
-    fun initializeConnection(context: Context){
-        this.context = context
-        storageRef = Firebase.storage
-
-//        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
-        database = Firebase.database
-//        database.setPersistenceEnabled(true)
+    override fun setUploadCallback(callback: ChatConnector.UploadCallback?) {
+        uploadCallback = callback
     }
 
-    fun lookForUpdates(path: String) {
+    override fun initializeConnection(context: Context) {
+        this.context = context
+        enablePersistence()
+        storageRef = Firebase.storage
+        database = Firebase.database
+    }
 
-        database.reference.child("roomChat/$roomId").addValueEventListener(object : ValueEventListener {
-            override fun onCancelled(error: DatabaseError) {
-                Log.d(Wall_Tag, "not able to send message " + error)
-            }
+    private fun enablePersistence() {
+        if (persistenceEnabled) return
+        try {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+            persistenceEnabled = true
+        } catch (e: Exception) {
+            // Already enabled from a prior call — safe to ignore
+        }
+    }
 
+    override fun lookForUpdates(path: String) {
+        val ref = database.reference.child("roomChat/$roomId")
+        val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-
-//                val user = snapshot.getValue(String::class.java)
-//                val gson = Gson()
-//                val userChat = gson.fromJson(user, UserChat::class.java)
-//                Log.d(Wall_Tag, "Last Message: $user")
-//                if(userChat.userUniqueId != userUniqueId) {
-//                    getImageFromFirebase(userChat.uri)
-//                }
-                Log.d(Wall_Tag, "message arried " + snapshot.getValue())
-                if (snapshot.hasChildren()) {
-                    Log.d(Wall_Tag,"has last snapshot")
-                    val lastMessageSnapshot = snapshot.children.last()
-                    val lastMessage = lastMessageSnapshot.getValue(String::class.java)
-
-                    if (lastMessage != null) {
-                        Log.d(Wall_Tag,"till now no null")
-                        val gson = Gson()
-                        val userChat = gson.fromJson(lastMessage, UserChat::class.java)
-                        Log.d(Wall_Tag, "Last Message: $lastMessage")
-                        if(userChat.userUniqueId != userUniqueId) {
-                            getImageFromFirebase(userChat.uri, userChat.userUniqueId)
+                Log.d(LOG_TAG, "roomChat update received")
+                if (!snapshot.hasChildren()) return
+                val lastSnapshot = snapshot.children.last()
+                val messageKey = lastSnapshot.key ?: ""
+                val lastMessage = lastSnapshot.getValue(String::class.java) ?: return
+                val userChat = Gson().fromJson(lastMessage, UserChat::class.java) ?: return
+                if (userChat.userUniqueId != userUniqueId) {
+                    when (userChat.type) {
+                        "text" -> {
+                            val senderName = partnerUserName.ifEmpty { userChat.userUniqueId }
+                            val msg = MessageModel(
+                                message = userChat.text ?: "",
+                                senderId = userChat.userUniqueId,
+                                timestamp = userChat.timestamp,
+                                messageKey = messageKey,
+                                replyToKey = userChat.replyToKey,
+                                replyPreview = userChat.replyPreview
+                            )
+                            messageUpdateCallback?.onMessageUpdated(msg)
                         }
+                        else -> getImageFromFirebase(userChat.uri, userChat.userUniqueId, messageKey = messageKey, replyToKey = userChat.replyToKey, replyPreview = userChat.replyPreview)
                     }
                 }
             }
-        })
-    }
 
-    fun setWallpaper(imagePath: String) {
-//        val wallpaperManager = WallpaperManager.getInstance(context)
-//
-//        val bitmap = BitmapFactory.decodeFile(imagePath)
-//
-//        try {
-//            wallpaperManager.setBitmap(bitmap)
-//        } catch (e: IOException) {
-//            e.printStackTrace()
-//        }
-
-        if (ContextCompat.checkSelfPermission(context, SET_WALLPAPER)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            val bitmapImg = BitmapFactory.decodeFile(imagePath)
-            Log.d(Wall_Tag,"setting wallpaper")
-            val wallpaperManager = WallpaperManager.getInstance(context)
-            wallpaperManager.setBitmap(bitmapImg, null, true, WallpaperManager.FLAG_LOCK)
-        } else {
-            Log.d(Wall_Tag, "not able to set")
-        }
-    }
-
-    fun getImageFromFirebase(imgPath: String = "images/image.jpg", senderId: String = "3245", flag: Boolean = true) {
-        val storageRef = Firebase.storage.reference
-        val imageRef = storageRef.child("file/$roomId").child(imgPath)
-
-        // Use permanent storage directory
-        val permanentStorageDirectory = File(context.getExternalFilesDir(null), "images")
-        if (!permanentStorageDirectory.exists()) {
-            permanentStorageDirectory.mkdirs()
-        }
-
-        val permanentFile = File(permanentStorageDirectory, imgPath)
-        Log.d(Wall_Tag, "Checking if file exists: ${permanentFile.absolutePath}")
-
-        // Check if the file exists in permanent storage
-        if (permanentFile.exists()) {
-            // Image already exists in permanent storage, use it
-            val msg = if(senderId!= userUniqueId) "$partnerUserName set a pic!" else "You set a Pic!"
-            messageUpdateCallback?.onMessageUpdated(
-
-                MessageModel(
-                    msg,
-                    Uri.fromFile(permanentFile),
-                    senderId
-                )
-            )
-
-            if (flag) {
-                // Now set it as wallpaper
-                setWallpaper(permanentFile.absolutePath)
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(LOG_TAG, "lookForUpdates cancelled: $error")
             }
+        }
+        roomChatRef = ref
+        roomChatListener = listener
+        ref.addValueEventListener(listener)
+    }
 
-            Log.d(Wall_Tag, "Image already exists in permanent storage")
-        } else {
-            // File doesn't exist in permanent storage, download it
-            Log.d(Wall_Tag, "File doesn't exist, downloading...")
+    override fun stopListening() {
+        roomChatListener?.let { roomChatRef?.removeEventListener(it) }
+        roomChatListener = null
+        roomChatRef = null
+    }
 
+    override fun setWallpaper(imagePath: String) {
+        val sharedPref = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
+        val target = sharedPref.getString("wallpaperTarget", "lock") ?: "lock"
+        com.example.cowall.utilities.WallpaperHelper.setWallpaper(context, imagePath, target)
+    }
+
+    fun getImageFromFirebase(imgPath: String, senderId: String = "", setAsWallpaper: Boolean = true, messageKey: String = "", replyToKey: String? = null, replyPreview: String? = null) {
+        if (imgPath.startsWith("https://")) {
+            downloadImageFromUrl(imgPath, senderId, setAsWallpaper, messageKey, replyToKey, replyPreview)
+            return
+        }
+
+        val imageRef = storageRef.reference.child("file/$roomId").child(imgPath)
+        val storageDir = File(context.getExternalFilesDir(null), "images").also { it.mkdirs() }
+        val localFile = File(storageDir, imgPath)
+
+        if (localFile.exists()) {
+            dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview)
+            if (setAsWallpaper) setWallpaper(localFile.absolutePath)
+            return
+        }
+
+        imageRef.getFile(localFile)
+            .addOnSuccessListener {
+                dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview)
+                if (setAsWallpaper) setWallpaper(localFile.absolutePath)
+            }
+            .addOnFailureListener { e ->
+                Log.e(LOG_TAG, "Image download failed for $imgPath: $e")
+            }
+    }
+
+    private fun downloadImageFromUrl(url: String, senderId: String, setAsWallpaper: Boolean, messageKey: String = "", replyToKey: String? = null, replyPreview: String? = null) {
+        val fileName = "${UUID.randomUUID()}.jpg"
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                imageRef.getFile(permanentFile).addOnSuccessListener {
-                    // Image downloaded successfully
-                    messageUpdateCallback?.onMessageUpdated(
-                        MessageModel(
-                            "Send from $senderId",
-                            Uri.fromFile(permanentFile),
-                            senderId
-                        )
-                    )
+                val storageDir = File(context.getExternalFilesDir(null), "images").also { it.mkdirs() }
+                val localFile = File(storageDir, fileName)
 
-                    if (flag) {
-                        // Now set it as wallpaper
-                        setWallpaper(permanentFile.absolutePath)
+                val bytes = fetchUrlBytes(url)
+                if (bytes == null) {
+                    Log.e(LOG_TAG, "downloadImageFromUrl: empty response for $url")
+                    return@launch
+                }
+
+                localFile.writeBytes(bytes)
+                dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview)
+                if (setAsWallpaper) setWallpaper(localFile.absolutePath)
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "downloadImageFromUrl failed: $e")
+            }
+        }
+    }
+
+    /**
+     * Follows redirects manually across domains (HttpURLConnection won't auto-follow
+     * cross-domain redirects on all Android versions).
+     */
+    private fun fetchUrlBytes(urlStr: String, redirectsRemaining: Int = 5): ByteArray? {
+        if (redirectsRemaining == 0) {
+            Log.e(LOG_TAG, "fetchUrlBytes: too many redirects for $urlStr")
+            return null
+        }
+        val conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 30_000
+            instanceFollowRedirects = false  // handle manually to support cross-domain
+        }
+        return when (val code = conn.responseCode) {
+            in 200..299 -> conn.inputStream.use { it.readBytes() }
+            301, 302, 303, 307, 308 -> {
+                val location = conn.getHeaderField("Location")
+                if (location.isNullOrEmpty()) {
+                    Log.e(LOG_TAG, "fetchUrlBytes: redirect with no Location header")
+                    null
+                } else {
+                    Log.d(LOG_TAG, "fetchUrlBytes: redirect $code → $location")
+                    fetchUrlBytes(location, redirectsRemaining - 1)
+                }
+            }
+            else -> {
+                Log.e(LOG_TAG, "fetchUrlBytes: HTTP $code for $urlStr")
+                null
+            }
+        }
+    }
+
+    private fun dispatchMessage(localFile: File, senderId: String, messageKey: String = "", replyToKey: String? = null, replyPreview: String? = null) {
+        val senderName = partnerUserName.ifEmpty { senderId }
+        val msg = if (senderId != userUniqueId) "$senderName set a pic!" else "You set a pic!"
+        messageUpdateCallback?.onMessageUpdated(
+            MessageModel(
+                message = msg,
+                imageUri = Uri.fromFile(localFile),
+                senderId = senderId,
+                messageKey = messageKey,
+                replyToKey = replyToKey,
+                replyPreview = replyPreview
+            )
+        )
+    }
+
+    override fun sendMessage(childPath: String, msg: String) {
+        database.reference.child(childPath).push().setValue(msg) { error, _ ->
+            if (error != null) Log.e(LOG_TAG, "sendMessage failed: $error")
+        }
+    }
+
+    override fun setProperty(childPath: String, value: String) {
+        database.reference.child(childPath).setValue(value) { error, _ ->
+            if (error != null) Log.e(LOG_TAG, "setProperty failed: $error")
+        }
+    }
+
+    fun sendUri(uri: String, replyToKey: String? = null, replyPreview: String? = null) {
+        val ref = database.getReference("roomChat/$roomId").push()
+        val key = ref.key ?: ""
+        val json = Gson().toJson(UserChat(userUniqueId, uri, System.currentTimeMillis(), type = "image", replyToKey = replyToKey, replyPreview = replyPreview))
+        ref.setValue(json)
+    }
+
+    override fun sendTextMessage(text: String, replyToKey: String?, replyPreview: String?) {
+        val ref = database.getReference("roomChat/$roomId").push()
+        val key = ref.key ?: ""
+        val json = Gson().toJson(UserChat(userUniqueId, "", System.currentTimeMillis(), type = "text", text = text, replyToKey = replyToKey, replyPreview = replyPreview))
+        ref.setValue(json)
+        val msg = MessageModel(
+            message = text,
+            senderId = userUniqueId,
+            timestamp = System.currentTimeMillis(),
+            messageKey = key,
+            replyToKey = replyToKey,
+            replyPreview = replyPreview
+        )
+        messageUpdateCallback?.onMessageUpdated(msg)
+    }
+
+    override fun uploadImageToDrive(selectedImage: Uri) {
+        val fileName = "${UUID.randomUUID()}.jpg"
+        val compressedUri = compressImage(selectedImage, fileName)
+        if (compressedUri == null) {
+            uploadCallback?.onUploadFailure("Failed to compress image")
+            return
+        }
+        uploadCallback?.onUploadStarted()
+        val driveManager = GoogleDriveManager()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val account = GoogleSignIn.getLastSignedInAccount(context)
+                    ?: run {
+                        Log.e(LOG_TAG, "uploadImageToDrive: no signed-in account")
+                        withContext(Dispatchers.Main) {
+                            uploadCallback?.onUploadFailure("Not signed in. Please re-login.")
+                        }
+                        return@launch
                     }
-
-                    Log.d(Wall_Tag, "Downloaded successfully to permanent storage")
-                }.addOnFailureListener {
-                    // Handle the failure to download the image
-                    Log.e(Wall_Tag, it.toString())
+                val token = GoogleAuthUtil.getToken(
+                    context,
+                    account.account!!,
+                    "oauth2:https://www.googleapis.com/auth/drive.file"
+                )
+                val fileId = driveManager.uploadImageToDrive(context, token, compressedUri, fileName)
+                    ?: run {
+                        Log.e(LOG_TAG, "uploadImageToDrive: Drive upload returned null")
+                        withContext(Dispatchers.Main) {
+                            uploadCallback?.onUploadFailure("Upload failed. Please try again.")
+                        }
+                        return@launch
+                    }
+                val downloadUrl = driveManager.getDirectDownloadUrl(fileId)
+                Log.d(LOG_TAG, "Drive upload success, sharing URL: $downloadUrl")
+                sendUri(downloadUrl)
+                withContext(Dispatchers.Main) { uploadCallback?.onUploadSuccess() }
+            } catch (e: com.google.android.gms.auth.UserRecoverableAuthException) {
+                // Token needs fresh user consent (e.g. scope revoked). Route back to login.
+                Log.w(LOG_TAG, "Drive token needs re-consent: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    uploadCallback?.onUploadFailure("Google Drive access expired. Please re-login.")
                 }
             } catch (e: Exception) {
-                Log.d(Wall_Tag, "Exception: $e")
+                Log.e(LOG_TAG, "uploadImageToDrive error: $e")
+                withContext(Dispatchers.Main) {
+                    uploadCallback?.onUploadFailure("Upload failed: ${e.localizedMessage}")
+                }
             }
         }
-    }
-
-
-    fun sendMessage(childPath:String, msg:String){
-        database.reference.child(childPath)
-            .push()
-            .setValue(
-                msg,
-                DatabaseReference.CompletionListener { databaseError, databaseReference ->
-                    if (databaseError != null) {
-                        Log.d(
-                            Wall_Tag, "Unable to write message to database.",
-                            databaseError.toException()
-                        )
-                        return@CompletionListener
-                    } else {
-                        Log.d(Wall_Tag, "sab changa si bhaiyanu")
-                    }
-                })
-    }
-
-
-    fun setProperty(childPath:String, msg:String){
-        database.reference.child(childPath)
-            .setValue(
-                msg,
-                DatabaseReference.CompletionListener { databaseError, databaseReference ->
-                    if (databaseError != null) {
-                        Log.d(
-                            Wall_Tag, "Unable to write message to database.",
-                            databaseError.toException()
-                        )
-                        return@CompletionListener
-                    } else {
-                        Log.d(Wall_Tag, "sab changa si bhaiyanu")
-                    }
-                })
-    }
-
-    fun sendUri(uri:String){
-        // Convert object to JSON
-        val userChat = UserChat(userUniqueId, uri)
-        val gson = Gson()
-        val json = gson.toJson(userChat)
-
-        val database = FirebaseDatabase.getInstance()
-        val myRef = database.getReference("roomChat/$roomId")
-        myRef.push().setValue(json)
-    }
-    fun uploadImageToFirebase(selectedImage: Uri) : String {
-        val sd = "${UUID.randomUUID()}.jpg"
-        val compressedImageUri = compressImage(selectedImage, sd) ?: return "" // Handle compression failure
-        printLog("selected $selectedImage and comp $compressedImageUri")
-        val uploadTask = storageRef.reference.child("file/$roomId/$sd").putFile(compressedImageUri)
-        // On success, download the file URL and display it
-        uploadTask.addOnSuccessListener {
-            // using glide library to display the image
-            storageRef.reference.child("file/$roomId/$sd").downloadUrl.addOnSuccessListener {
-//                    Glide.with(this@MainActivity)
-//                        .load(it)
-//                        .into(imageview)
-
-                Log.d(Wall_Tag, "download passed " + it.path)
-                sendUri(sd)
-            }.addOnFailureListener {
-                Log.e(Wall_Tag, "Failed in downloading")
-            }
-        }.addOnFailureListener {
-            Log.e(Wall_Tag, "Image Upload fail " + it.toString())
-        }
-
-        return sd
-//        val urlTask = uploadTask.continueWithTask { task ->
-//            if (!task.isSuccessful) {
-//                task.exception?.let {
-//                    throw it
-//                }
-//            }
-//            ref.downloadUrl
-//        }.addOnCompleteListener { task ->
-//            if (task.isSuccessful) {
-//                val downloadUri = task.result
-//            } else {
-//                // Handle failures
-//                // ...
-//            }
-//        }
     }
 
     private fun compressImage(selectedImage: Uri, imagePath: String): Uri? {
-        val file = File(selectedImage.path!!) // Get the file from the URI
-        printLog("iamge uurri $selectedImage, $file, \n ${file.absolutePath}")
         return try {
-            val options = BitmapFactory.Options()
-            options.inPreferredConfig = Bitmap.Config.RGB_565
-//            val bitmap = BitmapFactory.decodeFile(file.path, options)
-            val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), selectedImage)
-
-            printLog("bitmap, ${bitmap.toString()}")
+            val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, selectedImage)
             val stream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream) // Compress to 50% quality
-            val compressedImage = File(context.getExternalFilesDir(null), "images/$imagePath")
-            compressedImage.outputStream().use {
-                it.write(stream.toByteArray())
-            }
-            // Return the URI of the compressed image
-            Uri.fromFile(compressedImage)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream)
+            val outDir = File(context.getExternalFilesDir(null), "images").also { it.mkdirs() }
+            val outFile = File(outDir, imagePath)
+            outFile.outputStream().use { it.write(stream.toByteArray()) }
+            Uri.fromFile(outFile)
         } catch (e: Exception) {
-            // Handle any errors during compression
-            Log.e(Wall_Tag, "Image compression failed: $e")
+            Log.e(LOG_TAG, "Image compression failed: $e")
             null
         }
     }
 
-    fun getMessageCount(child: String) : Int {
-        var returningValue : Int = 0
-        database.reference.child(child).get().addOnSuccessListener {
-            Log.i("firebase", "Got value ${it.value}")
-            returningValue = it.childrenCount.toInt()
-        }.addOnFailureListener{
-            returningValue = 0
-        }
-        return returningValue
+    override fun getMessageCount(child: String): Int {
+        var count = 0
+        database.reference.child(child).get()
+            .addOnSuccessListener { count = it.childrenCount.toInt() }
+        return count
     }
 
-    fun getAllMessageData(){
-
-        var messageList = ArrayList<MessageModel>()
+    override fun getAllMessageData() {
         database.reference.child("roomChat/$roomId")
-            .orderByChild("timestamp")
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.hasChildren()) {
-                        for (messageSnapshot in snapshot.children) {
-                            val message = messageSnapshot.getValue(String::class.java)
-                            val gson = Gson()
-                            val userChat = gson.fromJson(message, UserChat::class.java)
-                            userChat?.let {
-                                Log.d("Walld","traversing throug ${it.userUniqueId}")
-                                // Process and display the message in your UI
-                                // For example, you can add it to your adapter
-                                // messageAdapter.addMessage(message)
-//                                messageList.add(MessageModel("Chahats mesa",Uri.fromFile(File(it.uri)), it.userUniqueId))
-                                getImageFromFirebase(it.uri,it.userUniqueId,false)
+                    if (!snapshot.hasChildren()) return
+                    for (messageSnapshot in snapshot.children) {
+                        val messageKey = messageSnapshot.key ?: ""
+                        val message = messageSnapshot.getValue(String::class.java) ?: continue
+                        val userChat = Gson().fromJson(message, UserChat::class.java) ?: continue
+                        when (userChat.type) {
+                            "text" -> {
+                                val msg = MessageModel(
+                                    message = userChat.text ?: "",
+                                    senderId = userChat.userUniqueId,
+                                    timestamp = userChat.timestamp,
+                                    messageKey = messageKey,
+                                    replyToKey = userChat.replyToKey,
+                                    replyPreview = userChat.replyPreview
+                                )
+                                messageUpdateCallback?.onMessageUpdated(msg)
                             }
+                            else -> getImageFromFirebase(userChat.uri, userChat.userUniqueId, false, messageKey, userChat.replyToKey, userChat.replyPreview)
                         }
                     }
-//                    messageUpdateCallback?.onMessageGet(messageList)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    // Handle error
+                    Log.e(LOG_TAG, "getAllMessageData cancelled: $error")
                 }
             })
     }
-    fun getPatnerUserName( callback: (String?) -> Unit){
-        val roomRef = database.getReference("chatRooms/$roomId/participants")
-        roomRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                // Handle the event when participants change
-                // Notify the room creator or update UI
-                val participants = snapshot.children.map { it.key }.toList()
-                printLog("Participants: $participants")
-                for (participantSnapshot in snapshot.children) {
-                    val partnerUserId: String? = participantSnapshot.key
-                    val isJoined = participantSnapshot.value as Boolean
-                    if(partnerUserId != userUniqueId ){
-                        val userReference = database.reference.child("userName").child(partnerUserId!!)
 
-                        userReference.addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onDataChange(snapshot: DataSnapshot) {
-                                // Check if the user exists
-                                val userName:String = snapshot.getValue() as String
-                                partnerUserName = userName
-                                callback.invoke(userName)
-                            }
+    override fun getPatnerUserName(callback: (String?) -> Unit) {
+        database.getReference("chatRooms/$roomId/participants")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    for (child in snapshot.children) {
+                        val partnerId = child.key ?: continue
+                        if (partnerId == userUniqueId) continue
+                        database.reference.child("userName").child(partnerId)
+                            .addListenerForSingleValueEvent(object : ValueEventListener {
+                                override fun onDataChange(snap: DataSnapshot) {
+                                    val name = snap.getValue(String::class.java) ?: "Partner"
+                                    if (partnerUserName.isEmpty()) {
+                                        partnerUserName = name
+                                    }
+                                    callback(name)
+                                }
 
-                            override fun onCancelled(error: DatabaseError) {
-                                callback.invoke("UserName")
-                            }
-                        })
+                                override fun onCancelled(error: DatabaseError) {
+                                    callback("Partner")
+                                }
+                            })
+                        return
                     }
+                    callback(null)
                 }
-            }
 
-            override fun onCancelled(error: DatabaseError) {
-                // Handle the error
-                Log.e("ChatRoomActivity", "Error: $error")
-            }
-        })
-
-
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(LOG_TAG, "getPartnerUserName cancelled: $error")
+                    callback(null)
+                }
+            })
     }
 }

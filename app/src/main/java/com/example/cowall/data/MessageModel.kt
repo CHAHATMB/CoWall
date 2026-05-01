@@ -2,21 +2,18 @@ package com.example.cowall.data
 
 import android.net.Uri
 
-class MessageModel {
-    var message: String? = null
-    var imageUri: Uri? = null
-    var senderId: String? = null
+enum class MessageStatus { SENDING, SENT, DELIVERED }
 
-    constructor(){}
-
-    constructor(message: String, imageUri: Uri, senderId:String){
-        this.message = message
-        this.imageUri = imageUri
-        this.senderId = senderId
-    }
-
-    constructor(imageUri: Uri, senderId: String){
-        this.imageUri = imageUri
-        this.senderId = senderId
-    }
-}
+data class MessageModel(
+    val message: String = "",
+    val imageUri: Uri? = null,
+    val senderId: String = "",
+    val caption: String? = null,
+    val timestamp: Long = System.currentTimeMillis(),
+    val status: MessageStatus = MessageStatus.SENDING,
+    val messageKey: String = "",
+    val reactions: Map<String, String> = emptyMap(),
+    val replyToKey: String? = null,
+    val replyPreview: String? = null,
+    val isWallpaper: Boolean = false
+)

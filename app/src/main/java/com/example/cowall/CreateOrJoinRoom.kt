@@ -3,228 +3,198 @@ package com.example.cowall
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.widget.Toast
+import com.example.cowall.activities.ChatRoomActivity
 import com.example.cowall.data.User
-import com.example.cowall.data.UserChat
 import com.example.cowall.databinding.ActivityCreateOrJoinRoomBinding
-import com.example.cowall.databinding.ActivityMainBinding
+import com.example.cowall.utilities.copyToClipboard
 import com.example.cowall.utilities.displayToast
 import com.example.cowall.utilities.hide
-import com.example.cowall.utilities.printLog
 import com.example.cowall.utilities.show
+import com.example.cowall.utilities.showErrorSnackbar
+import com.example.cowall.utilities.showLoadingDialog
+import com.example.cowall.utilities.showSuccessSnackbar
 import com.google.firebase.database.*
-import com.google.gson.Gson
-import org.koin.android.ext.android.bind
 import kotlin.random.Random.Default.nextInt
+import org.koin.android.ext.android.inject
 
 class CreateOrJoinRoom : AppCompatActivity() {
 
-    private lateinit var sharedPref : SharedPreferences
-    private val sharedPrefString : String = "cowall"
-    private lateinit var userUniqueId : String
+    private lateinit var sharedPref: SharedPreferences
+    private lateinit var userUniqueId: String
     private lateinit var binding: ActivityCreateOrJoinRoomBinding
-    private val Wall_Tag = "Walld"
-    private  lateinit var firebaseconn : FireBaseConnector
-    private lateinit var roomId : String
-    val VARIABLE_WAITING_STATE = "waitingStatus"
-    val VARIABLE_USERNAME = "userName"
-    lateinit  var roomRef : DatabaseReference
-    private var firstUserJoined = false
-    private lateinit var valueEventListener: ValueEventListener
+    private val firebaseconn: ChatConnector by inject()
+    private lateinit var roomId: String
+    private lateinit var roomRef: DatabaseReference
+    private var partnerListener: ValueEventListener? = null
+
+    companion object {
+        private const val LOG_TAG = "CoWall"
+        private const val PREF_WAITING_STATE = "waitingStatus"
+        private const val PREF_USERNAME = "userName"
+        private const val PREF_JOINED_ROOM = "joinedRoomId"
+        private const val PREF_PARTNER_NAME = "partnerName"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityCreateOrJoinRoomBinding.inflate(layoutInflater)
-        val view = binding.root
-        setContentView(view)
+        setContentView(binding.root)
 
-            firebaseconn = FireBaseConnector()
-            firebaseconn.initializeConnection(this.applicationContext)
-            editTextWatch()
-
+        firebaseconn.initializeConnection(applicationContext)
 
         sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
-
         userUniqueId = getOrGenerateId("userUniqueId")
         roomId = getOrGenerateId("roomId")
-        binding.yourRoomId.text = "share your code: "+roomId
-        binding.yourRoomIdCS.text = "share your code: "+roomId
-        binding.submitButton.setOnClickListener{ roomIdSubmit() }
-        binding.exitButtonCS.setOnClickListener{ onExitButtonPressed() }
-        // Reference to the chat room in the database
         roomRef = FirebaseDatabase.getInstance().getReference("chatRooms/$roomId/participants")
 
-        loadWaitingPage()
+        binding.yourRoomId.text = "share your code: $roomId"
+        binding.yourRoomIdCS.text = "share your code: $roomId"
+        binding.submitButton.setOnClickListener { onSubmitPressed() }
+        binding.exitButtonCS.setOnClickListener { onExitPressed() }
+
+        binding.yourRoomId.setOnClickListener { copyToClipboard("Room Code", roomId) }
+        binding.yourRoomIdCS.setOnClickListener { copyToClipboard("Room Code", roomId) }
+
+        watchEditText()
+        restoreUiState()
     }
-    fun editTextWatch(){
+
+    override fun onDestroy() {
+        super.onDestroy()
+        partnerListener?.let { roomRef.removeEventListener(it) }
+    }
+
+    private fun watchEditText() {
         binding.editRoomId.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                if(binding.editRoomId.text.toString().trim().isEmpty()){
-                    binding.submitButton.text = "Create"
-                } else {
-                    binding.submitButton.text = "Join"
-                }
+                binding.submitButton.text = if (s?.trim().isNullOrEmpty()) "Create" else "Join"
             }
-
-            override fun afterTextChanged(s: Editable?) {
-                if(binding.editRoomId.text.toString().trim().isEmpty()){
-                    binding.submitButton.text = "Create"
-                } else {
-                    binding.submitButton.text = "Join"
-                }
-            }
+            override fun afterTextChanged(s: Editable?) {}
         })
-
     }
-    fun roomIdSubmit() {
 
-        val userName = binding.yourName.text.toString()
-        if(userName.trim().isEmpty()){
-            displayToast("Please Enter Your Name!")
+    private fun onSubmitPressed() {
+        val userName = binding.yourName.text.toString().trim()
+        if (userName.isEmpty()) {
+            binding.yourName.error = "Please enter your name"
+            binding.yourName.requestFocus()
             return
-        } else {
-            firebaseconn.setProperty("userName/$userUniqueId",userName)
-            with (sharedPref.edit()) {
-                putString(VARIABLE_USERNAME, userName)
-                apply()
-            }
         }
+        binding.yourName.error = null
+        firebaseconn.setProperty("userName/$userUniqueId", userName)
+        sharedPref.edit().putString(PREF_USERNAME, userName).apply()
 
-        val partnerRoomId = binding.editRoomId.text.toString()
-        printLog("usernamed m $userName roomdid $partnerRoomId")
-        if(partnerRoomId.trim().isEmpty()) {
-            onExitButtonPressed(true)
-            lookForPartnerToJoin("roomId/$roomId")
+        val partnerCode = binding.editRoomId.text.toString().trim()
+        if (partnerCode.isEmpty()) {
+            sharedPref.edit().putString(PREF_WAITING_STATE, "true").apply()
+            showWaiting(true)
+            showSuccessSnackbar("Room created! Share your code with your partner")
+            lookForPartner()
         } else {
-            Log.d(Wall_Tag, "sending mesage to firebase ${partnerRoomId}")
-            firebaseconn.sendMessage("roomId/$partnerRoomId", userUniqueId)
-            val user = User(userUniqueId, userName)
-            joinChatRoom(user, partnerRoomId)
-            Log.d(Wall_Tag, "after sending")
-            with(sharedPref.edit()) {
-                putString("joinedRoomId", partnerRoomId)
-                apply()
+            if (partnerCode.length != 8 || !partnerCode.all { it.isDigit() }) {
+                binding.editRoomId.error = "Enter a valid 8-digit room code"
+                binding.editRoomId.requestFocus()
+                return
             }
-            Log.d(Wall_Tag, "after sharedprefd")
-            val intent = Intent(this.applicationContext, MainActivity::class.java)
-            startActivity(intent)
-            finish()
+            binding.editRoomId.error = null
+            val loadingDialog = showLoadingDialog("Joining room...")
+            firebaseconn.sendMessage("roomId/$partnerCode", userUniqueId)
+            joinChatRoom(User(userUniqueId, userName), partnerCode)
+            sharedPref.edit()
+                .putString(PREF_JOINED_ROOM, partnerCode)
+                .putString(PREF_WAITING_STATE, "false")
+                .apply()
+            FireBaseConnector.setUniqueIds(userUniqueId, partnerCode)
+            loadingDialog.dismiss()
+            navigateToChatRoom()
         }
     }
 
-    private fun getOrGenerateId(identifierString : String) : String {
+    private fun onExitPressed() {
+        partnerListener?.let { roomRef.removeEventListener(it) }
+        partnerListener = null
+        sharedPref.edit().putString(PREF_WAITING_STATE, "false").apply()
+        showWaiting(false)
+    }
 
-        var uniqueId : String
-        if (sharedPref.contains(identifierString)) {
-            uniqueId = sharedPref.getString(identifierString, "default_value").toString()
+    private fun getOrGenerateId(key: String): String {
+        if (sharedPref.contains(key)) {
+            return sharedPref.getString(key, "")!!
+        }
+        val newId = nextInt(11111111, 99999999).toString()
+        sharedPref.edit().putString(key, newId).apply()
+        if (key == "roomId") {
+            firebaseconn.sendMessage("roomId/$newId", userUniqueId)
+        }
+        return newId
+    }
+
+    private fun restoreUiState() {
+        sharedPref.getString(PREF_USERNAME, null)?.let { binding.yourName.setText(it) }
+        val isWaiting = sharedPref.getString(PREF_WAITING_STATE, "false") == "true"
+        if (isWaiting) {
+            showWaiting(true)
+            lookForPartner()
         } else {
-            uniqueId = nextInt(11111111,99999999).toString()
-            with (sharedPref.edit()) {
-                putString(identifierString, uniqueId)
-                apply()
-            }
-            if(identifierString == "roomId"){
-                firebaseconn.sendMessage("roomId/${uniqueId}",userUniqueId)
-            }
-        }
-        Log.d(Wall_Tag,identifierString + uniqueId)
-        return uniqueId
-    }
-    private fun loadWaitingPage(){
-        if (sharedPref.contains(VARIABLE_USERNAME)) {
-            if( sharedPref.contains(VARIABLE_WAITING_STATE) && sharedPref.getString(VARIABLE_WAITING_STATE, "false").equals("true")){
-                showWaitingPage()
-            } else {
-               binding.yourName.setText(sharedPref.getString(VARIABLE_USERNAME, "Your Named").toString())
-                showWaitingPage(true)
-            }
-        } else {
-            printLog("We are in else")
-            showWaitingPage(true)
-        }
-    }
-    private fun showWaitingPage(boolean: Boolean=false){
-        if(boolean){
-            binding.createRoomCL.show()
-            binding.waitingRoomCS.hide()
-        } else {
-            binding.createRoomCL.hide()
-            binding.waitingRoomCS.show()
+            showWaiting(false)
         }
     }
 
-    private fun onExitButtonPressed(boolean: Boolean = false){
-        val value = if(boolean) "true" else "false"
-        if(!boolean && ::roomRef.isInitialized && ::valueEventListener.isInitialized){
-            roomRef.removeEventListener(valueEventListener)
-        }
-        printLog("value s"+value)
-        with (sharedPref.edit()) {
-            putString(VARIABLE_WAITING_STATE, value)
-            apply()
-        }
-        loadWaitingPage()
+    private fun showWaiting(show: Boolean) {
+        if (show) { binding.createRoomCL.hide(); binding.waitingRoomCS.show() }
+        else { binding.createRoomCL.show(); binding.waitingRoomCS.hide() }
     }
 
-    fun lookForPartnerToJoin(path: String) {
-
-        // Add a ValueEventListener to listen for changes in participants
-        valueEventListener = object : ValueEventListener {
+    private fun lookForPartner() {
+        val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                // Handle the event when participants change
-                // Notify the room creator or update UI
-                val participants = snapshot.children.map { it.key }.toList()
-                printLog("Participants: $participants")
-                    // Find out details of each participant
-                    for (participantSnapshot in snapshot.children) {
-                        val userId = participantSnapshot.key
-                        val isJoined = participantSnapshot.value as Boolean
-
-                        if (isJoined && userId != userUniqueId) {
-                            joinChatRoom(User(userUniqueId,"jon dee"))
-                            with(sharedPref.edit()) {
-                                putString("joinedRoomId", roomId)
-                                apply()
-                            }
-                            with(sharedPref.edit()) {
-                                putString("partnerName", userId)
-                                apply()
-                            }
-                            // Stop listening after processing the first user
-                            roomRef.removeEventListener(valueEventListener)
-
-                            val intent = Intent(this@CreateOrJoinRoom.applicationContext, MainActivity::class.java)
-                            startActivity(intent)
-                            finish()
-                            break
-                        }
+                for (child in snapshot.children) {
+                    val userId = child.key ?: continue
+                    val isJoined = child.value as? Boolean ?: continue
+                    if (isJoined && userId != userUniqueId) {
+                        val userName = sharedPref.getString(PREF_USERNAME, "") ?: ""
+                        joinChatRoom(User(userUniqueId, userName))
+                        sharedPref.edit()
+                            .putString(PREF_JOINED_ROOM, roomId)
+                            .putString(PREF_PARTNER_NAME, userId)
+                            .putString(PREF_WAITING_STATE, "false")
+                            .apply()
+                        FireBaseConnector.setUniqueIds(userUniqueId, roomId)
+                        partnerListener?.let { roomRef.removeEventListener(it) }
+                        partnerListener = null
+                        navigateToChatRoom()
+                        return
+                    }
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Handle the error
-                Log.e("ChatRoomActivity", "Error: $error")
+                Log.e(LOG_TAG, "lookForPartner cancelled: $error")
             }
         }
-        roomRef.addValueEventListener(valueEventListener)
+        partnerListener = listener
+        roomRef.addValueEventListener(listener)
     }
-    private fun joinChatRoom(user: User, roomId: String? = null) {
-        if(roomId != null){
-            printLog("setting id $roomId")
-            FirebaseDatabase.getInstance().getReference("chatRooms/$roomId/participants").child(user.userId).setValue(true)
-            return
+
+    private fun joinChatRoom(user: User, targetRoomId: String? = null) {
+        val ref = if (targetRoomId != null) {
+            FirebaseDatabase.getInstance().getReference("chatRooms/$targetRoomId/participants")
+        } else {
+            roomRef
         }
-        // Add the user to the participants list in the chat room
-        roomRef.child(user.userId).setValue(true)
+        ref.child(user.userId).setValue(true)
+    }
+
+    private fun navigateToChatRoom() {
+        startActivity(Intent(this, ChatRoomActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 }
