@@ -9,6 +9,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
@@ -18,6 +20,7 @@ import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityOptionsCompat
@@ -36,11 +39,19 @@ import com.example.cowall.RunningService
 import com.example.cowall.SwipeToReplyCallback
 import com.example.cowall.data.MessageModel
 import com.example.cowall.databinding.ActivityChatRoomBinding
+import com.example.cowall.utilities.showConfirmDialog
+import com.example.cowall.utilities.showEmotionalDialog
 import com.example.cowall.utilities.showErrorSnackbar
 import com.example.cowall.utilities.showInfoSnackbar
+import com.example.cowall.utilities.showLoadingDialog
 import com.example.cowall.utilities.showSuccessSnackbar
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.example.cowall.CreateOrJoinRoom
 import org.koin.android.ext.android.inject
 
 class ChatRoomActivity : AppCompatActivity(),
@@ -61,6 +72,12 @@ class ChatRoomActivity : AppCompatActivity(),
 
     private var replyingTo: MessageModel? = null
     private var isUploading = false
+
+    private var participantsListener: ValueEventListener? = null
+    private var hasHandledPartnerLeft = false
+    private var uploadDialog: AlertDialog? = null
+    private val typingAnimHandler = Handler(Looper.getMainLooper())
+    private var typingAnimRunnable: Runnable? = null
 
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -97,6 +114,7 @@ class ChatRoomActivity : AppCompatActivity(),
         setupRecyclerView()
         setupToolbar()
         setupInputBar()
+        setupEmptyStateButton()
         setupReplyBar()
         setupSwipeToReply()
         loadHistory()
@@ -104,6 +122,7 @@ class ChatRoomActivity : AppCompatActivity(),
         setupPresence()
         setupReactions()
         setupConnectivityMonitor()
+        setupRoomMonitor()
     }
 
     override fun onDestroy() {
@@ -113,11 +132,20 @@ class ChatRoomActivity : AppCompatActivity(),
         presenceManager?.goOffline()
         presenceManager?.stopObserving()
         reactionManager?.stopObserving()
+        stopTypingAnimation()
         networkCallback?.let {
             val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
             cm.unregisterNetworkCallback(it)
         }
         networkCallback = null
+        participantsListener?.let { listener ->
+            try {
+                FirebaseDatabase.getInstance()
+                    .getReference("chatRooms/${FireBaseConnector.roomId}/participants")
+                    .removeEventListener(listener)
+            } catch (_: UninitializedPropertyAccessException) {}
+        }
+        participantsListener = null
     }
 
     private fun initUserIds() {
@@ -214,7 +242,10 @@ class ChatRoomActivity : AppCompatActivity(),
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        binding.captionInput.hint = "Type a message or tap \uD83D\uDCF7"
+    }
+
+    private fun setupEmptyStateButton() {
+        binding.btnSendFirstPhoto.setOnClickListener { openCamera() }
     }
 
     private fun setupReplyBar() {
@@ -239,24 +270,49 @@ class ChatRoomActivity : AppCompatActivity(),
             presenceManager?.goOnline()
             presenceManager?.observePartnerPresence { data ->
                 runOnUiThread {
-                    val status = PresenceManager.formatPresenceStatus(data)
-                    if (status.isNotEmpty()) {
-                        binding.partnerStatusText.text = status
+                    if (data.typing) {
+                        if (typingAnimRunnable == null) startTypingAnimation()
                         binding.partnerStatusText.visibility = View.VISIBLE
-                        val color = when {
-                            data.typing -> ContextCompat.getColor(this, R.color.accent)
-                            data.online -> ContextCompat.getColor(this, R.color.online_green)
-                            else -> ContextCompat.getColor(this, R.color.text_secondary)
-                        }
-                        binding.partnerStatusText.setTextColor(color)
+                        binding.partnerStatusText.setTextColor(ContextCompat.getColor(this, R.color.accent))
                     } else {
-                        binding.partnerStatusText.visibility = View.GONE
+                        stopTypingAnimation()
+                        val status = PresenceManager.formatPresenceStatus(data)
+                        if (status.isNotEmpty()) {
+                            binding.partnerStatusText.text = status
+                            binding.partnerStatusText.visibility = View.VISIBLE
+                            val color = if (data.online) {
+                                ContextCompat.getColor(this, R.color.online_green)
+                            } else {
+                                ContextCompat.getColor(this, R.color.text_secondary)
+                            }
+                            binding.partnerStatusText.setTextColor(color)
+                        } else {
+                            binding.partnerStatusText.visibility = View.GONE
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
             // Presence is non-critical
         }
+    }
+
+    private fun startTypingAnimation() {
+        val frames = arrayOf(".", "..", "...")
+        var frameIndex = 0
+        typingAnimRunnable = object : Runnable {
+            override fun run() {
+                val name = FireBaseConnector.partnerUserName.ifEmpty { "Partner" }
+                binding.partnerStatusText.text = "$name is typing${frames[frameIndex++ % 3]}"
+                typingAnimHandler.postDelayed(this, 500)
+            }
+        }
+        typingAnimHandler.post(typingAnimRunnable!!)
+    }
+
+    private fun stopTypingAnimation() {
+        typingAnimRunnable?.let { typingAnimHandler.removeCallbacks(it) }
+        typingAnimRunnable = null
     }
 
     private fun setupReactions() {
@@ -289,7 +345,14 @@ class ChatRoomActivity : AppCompatActivity(),
     }
 
     private fun loadHistory() {
-        fbc.getAllMessageData()
+        val sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+        val needsSync = sharedPref.getBoolean("needsChatSync", false)
+        if (needsSync) {
+            sharedPref.edit().putBoolean("needsChatSync", false).apply()
+            fbc.getAllMessageData()
+        } else {
+            fbc.loadCachedMessages()
+        }
     }
 
     private fun fetchPartnerName() {
@@ -317,14 +380,16 @@ class ChatRoomActivity : AppCompatActivity(),
                 binding.unreadBadge.visibility = View.VISIBLE
             }
 
-            if (message.senderId != FireBaseConnector.userUniqueId) {
-                showInfoSnackbar("Wallpaper updated!")
-            }
         }
     }
 
     override fun onMessageGet(messages: List<MessageModel>) {
         runOnUiThread {
+            if (messages.isEmpty() && adapter.getDisplayItemCount() == 0) {
+                // Cache was empty — no local history, sync from Firebase
+                fbc.getAllMessageData()
+                return@runOnUiThread
+            }
             adapter.addAllMessages(messages)
             scrollToBottom()
             updateEmptyState()
@@ -390,10 +455,17 @@ class ChatRoomActivity : AppCompatActivity(),
                         }
                     }
                     "Delete" -> {
-                        FirebaseDatabase.getInstance()
-                            .getReference("roomChat/${FireBaseConnector.roomId}/${message.messageKey}")
-                            .removeValue()
-                        showInfoSnackbar("Message deleted")
+                        showConfirmDialog(
+                            title = "Delete message?",
+                            message = "This removes it for both of you.",
+                            positiveLabel = "Delete",
+                            onConfirm = {
+                                FirebaseDatabase.getInstance()
+                                    .getReference("roomChat/${FireBaseConnector.roomId}/${message.messageKey}")
+                                    .removeValue()
+                                showInfoSnackbar("Message deleted")
+                            }
+                        )
                     }
                 }
             }
@@ -550,13 +622,15 @@ class ChatRoomActivity : AppCompatActivity(),
         isUploading = true
         binding.cameraButton.isEnabled = false
         binding.cameraButton.alpha = 0.5f
-        showInfoSnackbar("Sending photo...")
+        uploadDialog = showLoadingDialog("Sending photo...")
     }
 
     override fun onUploadSuccess() {
         isUploading = false
         binding.cameraButton.isEnabled = true
         binding.cameraButton.alpha = 1.0f
+        uploadDialog?.dismiss()
+        uploadDialog = null
         val partnerName = FireBaseConnector.partnerUserName.ifEmpty { "Partner" }
         showSuccessSnackbar("Photo sent to $partnerName!")
     }
@@ -565,8 +639,90 @@ class ChatRoomActivity : AppCompatActivity(),
         isUploading = false
         binding.cameraButton.isEnabled = true
         binding.cameraButton.alpha = 1.0f
+        uploadDialog?.dismiss()
+        uploadDialog = null
         showErrorSnackbar(error, "Retry") {
             openCamera()
         }
+    }
+
+    // ─── Room lifecycle monitor ────────────────────────────────────
+
+    /**
+     * Watches chatRooms/{roomId}/participants for changes.
+     * If the count drops below 2 after the baseline is established (i.e. partner
+     * explicitly left via "Leave Room"), the remaining user is auto-kicked and the
+     * space is dissolved.
+     */
+    private fun setupRoomMonitor() {
+        val roomId = try { FireBaseConnector.roomId } catch (_: UninitializedPropertyAccessException) { return }
+        val userId = try { FireBaseConnector.userUniqueId } catch (_: UninitializedPropertyAccessException) { return }
+        val ref = FirebaseDatabase.getInstance().getReference("chatRooms/$roomId/participants")
+
+        var knownCount = -1
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val count = snapshot.childrenCount.toInt()
+                if (knownCount == -1) {
+                    knownCount = count  // Establish baseline on first callback.
+                    return
+                }
+                if (count < knownCount) {
+                    // A participant was removed. If we're still in the room, dissolve it.
+                    val weAreStillPresent = snapshot.child(userId).getValue(Boolean::class.java) == true
+                    if (weAreStillPresent) handleRoomDissolved()
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                android.util.Log.e("CoWall", "setupRoomMonitor cancelled: $error")
+            }
+        }
+        participantsListener = listener
+        ref.addValueEventListener(listener)
+    }
+
+    /**
+     * Called when the partner explicitly leaves the space.
+     * Clears local state, removes this user from participants, wipes the email
+     * mapping so recovery won't re-enter a dissolved room, then navigates back
+     * to CreateOrJoinRoom with a one-button dialog.
+     */
+    private fun handleRoomDissolved() {
+        if (hasHandledPartnerLeft) return
+        hasHandledPartnerLeft = true
+
+        val roomId = try { FireBaseConnector.roomId } catch (_: UninitializedPropertyAccessException) { "" }
+        val userId = try { FireBaseConnector.userUniqueId } catch (_: UninitializedPropertyAccessException) { "" }
+
+        if (roomId.isNotEmpty() && userId.isNotEmpty()) {
+            val db = FirebaseDatabase.getInstance().reference
+            db.child("chatRooms/$roomId/participants/$userId").removeValue()
+            val email = GoogleSignIn.getLastSignedInAccount(this)?.email
+            if (email != null) {
+                val sanitized = email.replace(".", ",")
+                db.child("emailToUserId/$sanitized").removeValue()
+                db.child("emailToRoomId/$sanitized").removeValue()
+            }
+        }
+
+        fbc.clearMessageCache()
+        getSharedPreferences("cowall", Context.MODE_PRIVATE).edit()
+            .remove("joinedRoomId")
+            .remove("roomId")
+            .remove("waitingStatus")
+            .remove("partnerName")
+            .apply()
+
+        showEmotionalDialog(
+            emoji = "\uD83D\uDC94",
+            title = "Space Closed",
+            message = "Your partner left the space. It's been dissolved — start a fresh one anytime.",
+            positiveLabel = "OK",
+            onPositive = {
+                startActivity(Intent(this, CreateOrJoinRoom::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+            }
+        )
     }
 }

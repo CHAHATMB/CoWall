@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.example.cowall.R
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 
@@ -75,6 +76,72 @@ fun Activity.showLoadingDialog(message: String = "Loading..."): AlertDialog {
         .setView(view)
         .setCancelable(false)
         .show()
+}
+
+// ─── Emotional dialogs (leave/dissolved) ──────────────────────────
+
+/**
+ * Single-button dialog with a large emoji — used for informational events
+ * like a partner leaving. Non-cancellable by default.
+ */
+fun Activity.showEmotionalDialog(
+    emoji: String,
+    title: String,
+    message: String,
+    positiveLabel: String = "OK",
+    cancellable: Boolean = false,
+    onPositive: () -> Unit = {}
+) {
+    val view = LayoutInflater.from(this).inflate(R.layout.dialog_emotional, null)
+    view.findViewById<TextView>(R.id.dialogEmoji).text = emoji
+    view.findViewById<TextView>(R.id.dialogTitle).text = title
+    view.findViewById<TextView>(R.id.dialogMessage).text = message
+    view.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+    val positiveButton = view.findViewById<MaterialButton>(R.id.dialogPositiveButton)
+    positiveButton.text = positiveLabel
+    val dialog = MaterialAlertDialogBuilder(this)
+        .setView(view)
+        .setCancelable(cancellable)
+        .create()
+    positiveButton.setOnClickListener {
+        dialog.dismiss()
+        onPositive()
+    }
+    dialog.show()
+}
+
+/**
+ * Two-button confirmation dialog with a large emoji — used for destructive
+ * actions like leaving a room.
+ */
+fun Activity.showEmotionalConfirmDialog(
+    emoji: String,
+    title: String,
+    message: String,
+    positiveLabel: String = "Confirm",
+    negativeLabel: String = "Cancel",
+    onConfirm: () -> Unit
+) {
+    val view = LayoutInflater.from(this).inflate(R.layout.dialog_emotional, null)
+    view.findViewById<TextView>(R.id.dialogEmoji).text = emoji
+    view.findViewById<TextView>(R.id.dialogTitle).text = title
+    view.findViewById<TextView>(R.id.dialogMessage).text = message
+    val dialog = MaterialAlertDialogBuilder(this)
+        .setView(view)
+        .setCancelable(true)
+        .create()
+    view.findViewById<MaterialButton>(R.id.dialogNegativeButton).apply {
+        text = negativeLabel
+        setOnClickListener { dialog.dismiss() }
+    }
+    view.findViewById<MaterialButton>(R.id.dialogPositiveButton).apply {
+        text = positiveLabel
+        setOnClickListener {
+            dialog.dismiss()
+            onConfirm()
+        }
+    }
+    dialog.show()
 }
 
 // ─── Confirmation dialog ───────────────────────────────────────────

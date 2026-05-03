@@ -232,13 +232,30 @@ class MessageAdapter(
     override fun getItemCount(): Int = displayItems.size
 
     fun addMessage(message: MessageModel) {
-        messageList.add(message)
+        if (message.messageKey.isNotEmpty()) {
+            val existingIndex = messageList.indexOfFirst { it.messageKey == message.messageKey }
+            if (existingIndex >= 0) {
+                // Update in place — image URI may have resolved after initial placeholder add
+                messageList[existingIndex] = message
+            } else {
+                messageList.add(message)
+            }
+        } else {
+            messageList.add(message)
+        }
         rebuildDisplayList()
         notifyDataSetChanged()
     }
 
     fun addAllMessages(messages: List<MessageModel>) {
-        messageList.addAll(messages)
+        for (message in messages) {
+            if (message.messageKey.isNotEmpty()) {
+                val existingIndex = messageList.indexOfFirst { it.messageKey == message.messageKey }
+                if (existingIndex < 0) messageList.add(message)
+            } else {
+                messageList.add(message)
+            }
+        }
         rebuildDisplayList()
         notifyDataSetChanged()
     }

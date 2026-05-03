@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="Wallpaper History"
+            android:text="Space Join History"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -58,14 +58,14 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="\uD83D\uDDBC\uFE0F"
+            android:text="&#x1F6AA;"
             android:textSize="48sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="No wallpaper history yet"
+            android:text="No spaces joined yet"
             android:textColor="@color/text_secondary"
             android:textSize="16sp" />
     </LinearLayout>

@@ -1,7 +1,5 @@
 package com.example.cowall.activities
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -9,24 +7,23 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cowall.R
-import com.example.cowall.adapters.WallpaperHistoryAdapter
+import com.example.cowall.adapters.RoomJoinHistoryAdapter
 import com.example.cowall.data.AppDatabase
-import com.example.cowall.data.WallpaperHistoryEntry
-import com.example.cowall.databinding.ActivityWallpaperHistoryBinding
+import com.example.cowall.data.RoomJoinRecord
+import com.example.cowall.databinding.ActivityRoomJoinHistoryBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
-class WallpaperHistoryActivity : AppCompatActivity() {
+class RoomJoinHistoryActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityWallpaperHistoryBinding
-    private val entries = mutableListOf<WallpaperHistoryEntry>()
-    private lateinit var historyAdapter: WallpaperHistoryAdapter
+    private lateinit var binding: ActivityRoomJoinHistoryBinding
+    private val records = mutableListOf<RoomJoinRecord>()
+    private lateinit var historyAdapter: RoomJoinHistoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityWallpaperHistoryBinding.inflate(layoutInflater)
+        binding = ActivityRoomJoinHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setupRecyclerView()
@@ -35,9 +32,7 @@ class WallpaperHistoryActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        historyAdapter = WallpaperHistoryAdapter(this, entries) { entry ->
-            openThumbnailPreview(entry)
-        }
+        historyAdapter = RoomJoinHistoryAdapter(records)
         binding.historyRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.historyRecyclerView.addItemDecoration(
             DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
@@ -55,34 +50,24 @@ class WallpaperHistoryActivity : AppCompatActivity() {
     private fun loadHistory() {
         lifecycleScope.launch {
             val loaded = withContext(Dispatchers.IO) {
-                AppDatabase.getInstance(this@WallpaperHistoryActivity)
-                    .wallpaperHistoryDao()
+                AppDatabase.getInstance(this@RoomJoinHistoryActivity)
+                    .roomJoinRecordDao()
                     .getAll()
             }
-            entries.clear()
-            entries.addAll(loaded)
+            records.clear()
+            records.addAll(loaded)
             historyAdapter.notifyDataSetChanged()
             updateUi()
         }
     }
 
     private fun updateUi() {
-        if (entries.isEmpty()) {
+        if (records.isEmpty()) {
             binding.emptyStateLayout.visibility = View.VISIBLE
             binding.historyRecyclerView.visibility = View.GONE
         } else {
             binding.emptyStateLayout.visibility = View.GONE
             binding.historyRecyclerView.visibility = View.VISIBLE
         }
-    }
-
-    private fun openThumbnailPreview(entry: WallpaperHistoryEntry) {
-        val file = File(entry.thumbnailPath)
-        if (!file.exists()) return
-        val uri = Uri.fromFile(file)
-        startActivity(Intent(this, PhotoViewActivity::class.java).apply {
-            putExtra(PhotoViewActivity.EXTRA_IMAGE_URI, uri)
-        })
-        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
     }
 }

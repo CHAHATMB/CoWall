@@ -123,6 +123,15 @@ class MockChatConnector : ChatConnector {
         }, SIMULATED_DELAY_MS)
     }
 
+    override fun loadCachedMessages() {
+        Log.d(LOG_TAG, "Mock loadCachedMessages — delegating to getAllMessageData")
+        getAllMessageData()
+    }
+
+    override fun clearMessageCache() {
+        Log.d(LOG_TAG, "Mock clearMessageCache (no-op)")
+    }
+
     override fun getPatnerUserName(callback: (String?) -> Unit) {
         handler.postDelayed({
             FireBaseConnector.partnerUserName = MOCK_PARTNER_NAME

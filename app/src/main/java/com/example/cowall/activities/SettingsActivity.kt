@@ -13,16 +13,19 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cowall.FireBaseConnector
-import com.example.cowall.LoginActivity
 import com.example.cowall.R
 import com.example.cowall.RunningService
 import com.example.cowall.databinding.ActivitySettingsBinding
+import com.example.cowall.CreateOrJoinRoom
+import com.example.cowall.LoginActivity
 import com.example.cowall.utilities.copyToClipboard
+import com.example.cowall.utilities.showEmotionalConfirmDialog
 import com.example.cowall.utilities.showConfirmDialog
 import com.example.cowall.utilities.showErrorSnackbar
 import com.example.cowall.utilities.showSuccessSnackbar
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.database.FirebaseDatabase
 import java.io.File
 
 class SettingsActivity : AppCompatActivity() {
@@ -47,6 +50,7 @@ class SettingsActivity : AppCompatActivity() {
         const val DEFAULT_WALLPAPER_FILENAME = "default_wallpaper.jpg"
 
         const val PREF_UPDATES_PAUSED = "updatesPaused"
+        const val PREF_SECURE_SHARE = "secureImageShare"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +62,7 @@ class SettingsActivity : AppCompatActivity() {
         loadRoomInfo()
         loadWallpaperTarget()
         loadPauseState()
+        loadSecureShareState()
         loadAutoResetSettings()
         loadAppearanceSettings()
         setupListeners()
@@ -126,9 +131,10 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.leaveRoomButton.setOnClickListener {
-            showConfirmDialog(
-                title = "Leave Room",
-                message = "Are you sure you want to leave this room? You'll need a new code to reconnect.",
+            showEmotionalConfirmDialog(
+                emoji = "\uD83D\uDC94",
+                title = "Leave the Space?",
+                message = "This will close the space for both of you. You'll need a new code to reconnect.",
                 positiveLabel = "Leave",
                 onConfirm = { leaveRoom() }
             )
@@ -148,6 +154,11 @@ class SettingsActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
 
+        binding.spaceHistoryRow.setOnClickListener {
+            startActivity(Intent(this, RoomJoinHistoryActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+        }
+
         binding.themeRow.setOnClickListener {
             showThemeDialog()
         }
@@ -164,6 +175,16 @@ class SettingsActivity : AppCompatActivity() {
                 showSuccessSnackbar("Wallpaper updates paused")
             } else {
                 showSuccessSnackbar("Wallpaper updates resumed")
+            }
+        }
+
+        binding.secureShareSwitch.setOnCheckedChangeListener { _, isChecked ->
+            getSharedPreferences("cowall", Context.MODE_PRIVATE)
+                .edit().putBoolean(PREF_SECURE_SHARE, isChecked).apply()
+            if (isChecked) {
+                showSuccessSnackbar("Secure sharing on — partner's Google sign-in required")
+            } else {
+                showSuccessSnackbar("Secure sharing off — images accessible via private link")
             }
         }
 
@@ -197,6 +218,23 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun leaveRoom() {
         val sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+        val roomId = sharedPref.getString("joinedRoomId", null)
+            ?: sharedPref.getString("roomId", null)
+        val userId = sharedPref.getString("userUniqueId", null)
+
+        if (roomId != null && userId != null) {
+            val db = FirebaseDatabase.getInstance().reference
+            // Remove from participants — triggers the partner's room-monitor to auto-leave.
+            db.child("chatRooms/$roomId/participants/$userId").removeValue()
+            // Clear email mapping so re-sign-in doesn't restore a dissolved room.
+            val email = GoogleSignIn.getLastSignedInAccount(this)?.email
+            if (email != null) {
+                val sanitized = email.replace(".", ",")
+                db.child("emailToUserId/$sanitized").removeValue()
+                db.child("emailToRoomId/$sanitized").removeValue()
+            }
+        }
+
         sharedPref.edit()
             .remove("joinedRoomId")
             .remove("roomId")
@@ -204,11 +242,9 @@ class SettingsActivity : AppCompatActivity() {
             .remove("partnerName")
             .apply()
 
-        val intent = Intent(this, LoginActivity::class.java).apply {
+        startActivity(Intent(this, CreateOrJoinRoom::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
-        finish()
+        })
     }
 
     private fun signOut() {
@@ -365,6 +401,12 @@ class SettingsActivity : AppCompatActivity() {
         val paused = getSharedPreferences("cowall", Context.MODE_PRIVATE)
             .getBoolean(PREF_UPDATES_PAUSED, false)
         binding.pauseUpdatesSwitch.isChecked = paused
+    }
+
+    private fun loadSecureShareState() {
+        val enabled = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+            .getBoolean(PREF_SECURE_SHARE, false)
+        binding.secureShareSwitch.isChecked = enabled
     }
 
     private fun notifyServiceRefresh() {

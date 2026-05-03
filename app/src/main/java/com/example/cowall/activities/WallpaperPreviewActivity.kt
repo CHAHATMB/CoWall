@@ -4,17 +4,15 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
-import com.example.cowall.FireBaseConnector
 import com.example.cowall.R
-import com.example.cowall.data.WallpaperRecord
 import com.example.cowall.databinding.ActivityWallpaperPreviewBinding
 import com.example.cowall.utilities.WallpaperHelper
 import com.example.cowall.utilities.showSuccessSnackbar
 import com.example.cowall.utilities.showErrorSnackbar
-import com.google.firebase.database.FirebaseDatabase
-import com.google.gson.Gson
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -28,6 +26,14 @@ class WallpaperPreviewActivity : AppCompatActivity() {
     private lateinit var binding: ActivityWallpaperPreviewBinding
     private var imageUri: Uri? = null
     private var imagePath: String? = null
+
+    private val clockHandler = Handler(Looper.getMainLooper())
+    private val clockRunnable = object : Runnable {
+        override fun run() {
+            binding.previewTimeText.text = SimpleDateFormat("h:mm", Locale.getDefault()).format(Date())
+            clockHandler.postDelayed(this, 60_000L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,10 +68,18 @@ class WallpaperPreviewActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        clockHandler.post(clockRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        clockHandler.removeCallbacks(clockRunnable)
+    }
+
     private fun setupTimeDisplay() {
-        val now = Date()
-        binding.previewTimeText.text = SimpleDateFormat("h:mm", Locale.getDefault()).format(now)
-        binding.previewDateText.text = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(now)
+        binding.previewDateText.text = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
     }
 
     private fun setupListeners() {
@@ -75,6 +89,8 @@ class WallpaperPreviewActivity : AppCompatActivity() {
         }
 
         binding.setWallpaperButton.setOnClickListener {
+            binding.setWallpaperButton.isEnabled = false
+            binding.setWallpaperButton.text = "Setting..."
             setAsWallpaper()
         }
     }
@@ -91,16 +107,18 @@ class WallpaperPreviewActivity : AppCompatActivity() {
         val target = getSelectedTarget()
         val uri = imageUri
         val path = imagePath
+        val userName = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+            .getString("userName", "") ?: ""
 
         try {
             when {
-                path != null -> WallpaperHelper.setWallpaper(this, path, target)
+                path != null -> WallpaperHelper.setWallpaper(this, path, target, userName)
                 uri != null -> {
                     val inputStream = contentResolver.openInputStream(uri)
                     val bitmap = BitmapFactory.decodeStream(inputStream)
                     inputStream?.close()
                     if (bitmap != null) {
-                        WallpaperHelper.setWallpaper(this, bitmap, target)
+                        WallpaperHelper.setWallpaper(this, bitmap, target, userName)
                     } else {
                         showErrorSnackbar("Failed to load image")
                         return
@@ -112,32 +130,14 @@ class WallpaperPreviewActivity : AppCompatActivity() {
                 }
             }
 
-            recordWallpaperHistory(target)
             showSuccessSnackbar("Wallpaper set successfully!")
 
             binding.setWallpaperButton.postDelayed({ finish() }, 1000)
         } catch (e: Exception) {
+            binding.setWallpaperButton.isEnabled = true
+            binding.setWallpaperButton.text = "Set Wallpaper"
             showErrorSnackbar("Failed to set wallpaper: ${e.localizedMessage}")
         }
     }
 
-    private fun recordWallpaperHistory(target: String) {
-        try {
-            val uriString = imageUri?.toString() ?: imagePath ?: return
-            val record = WallpaperRecord(
-                imageUri = uriString,
-                timestamp = System.currentTimeMillis(),
-                target = target
-            )
-            val roomId = FireBaseConnector.roomId
-            val userId = FireBaseConnector.userUniqueId
-            val json = Gson().toJson(record)
-            FirebaseDatabase.getInstance()
-                .getReference("wallpaperHistory/$roomId/$userId")
-                .push()
-                .setValue(json)
-        } catch (e: Exception) {
-            // Non-critical — don't block the main operation
-        }
-    }
 }

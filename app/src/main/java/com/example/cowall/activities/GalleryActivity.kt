@@ -7,17 +7,16 @@ import android.view.View
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityOptionsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.cowall.FireBaseConnector
 import com.example.cowall.R
 import com.example.cowall.adapters.GalleryAdapter
-import com.example.cowall.data.UserChat
+import com.example.cowall.data.AppDatabase
 import com.example.cowall.databinding.ActivityGalleryBinding
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class GalleryActivity : AppCompatActivity() {
@@ -56,40 +55,29 @@ class GalleryActivity : AppCompatActivity() {
 
     private fun loadPhotos() {
         binding.loadingIndicator.visibility = View.VISIBLE
-        val roomId = FireBaseConnector.roomId
+        val roomId = try { FireBaseConnector.roomId } catch (_: UninitializedPropertyAccessException) {
+            binding.loadingIndicator.visibility = View.GONE
+            updateUi()
+            return
+        }
 
-        FirebaseDatabase.getInstance().getReference("roomChat/$roomId")
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    binding.loadingIndicator.visibility = View.GONE
-                    val imagesDir = File(getExternalFilesDir(null), "images")
+        lifecycleScope.launch {
+            val imageMessages = withContext(Dispatchers.IO) {
+                AppDatabase.getInstance(this@GalleryActivity)
+                    .cachedMessageDao()
+                    .loadImageMessages(roomId)
+            }
 
-                    for (messageSnapshot in snapshot.children) {
-                        val message = messageSnapshot.getValue(String::class.java) ?: continue
-                        val userChat = Gson().fromJson(message, UserChat::class.java) ?: continue
-                        if (userChat.type != "image") continue
+            for (msg in imageMessages) {
+                val localPath = msg.localImagePath ?: continue
+                val file = File(localPath)
+                if (file.exists()) photos.add(Uri.fromFile(file))
+            }
 
-                        val uri = userChat.uri
-                        when {
-                            uri.startsWith("https://") -> photos.add(Uri.parse(uri))
-                            uri.isNotEmpty() -> {
-                                val localFile = File(imagesDir, uri)
-                                if (localFile.exists()) {
-                                    photos.add(Uri.fromFile(localFile))
-                                }
-                            }
-                        }
-                    }
-
-                    galleryAdapter.notifyDataSetChanged()
-                    updateUi()
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    binding.loadingIndicator.visibility = View.GONE
-                    updateUi()
-                }
-            })
+            binding.loadingIndicator.visibility = View.GONE
+            galleryAdapter.notifyDataSetChanged()
+            updateUi()
+        }
     }
 
     private fun updateUi() {

@@ -27,6 +27,8 @@ interface ChatConnector {
     fun sendTextMessage(text: String, replyToKey: String? = null, replyPreview: String? = null)
     fun uploadImageToDrive(selectedImage: Uri)
     fun getAllMessageData()
+    fun loadCachedMessages()
+    fun clearMessageCache()
     fun getPatnerUserName(callback: (String?) -> Unit)
 
     fun sendMessage(childPath: String, msg: String)

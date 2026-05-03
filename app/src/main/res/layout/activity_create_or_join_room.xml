@@ -2,12 +2,14 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CreateOrJoinRoom"
     android:background="#fff"
-    android:id="@+id/rootConstraintLayout">
+    android:fitsSystemWindows="true"
+    tools:context=".CreateOrJoinRoom">
 
+    <!-- ===== SCREEN 1: Setup ===== -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/createRoomCL"
         android:layout_width="match_parent"
@@ -22,95 +24,99 @@
             android:id="@+id/titleText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Join or Create Room"
+            android:text="Set up your Space"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:textColor="#D600A7"
-            android:textSize="35dp"
+            android:textSize="32sp"
             app:fontFamily="cursive"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.1"
+            app:layout_constraintHorizontal_bias="0.08"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.05" />
+            app:layout_constraintVertical_bias="0.04" />
 
+        <TextView
+            android:id="@+id/subtitleText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="28dp"
+            android:layout_marginEnd="28dp"
+            android:layout_marginTop="2dp"
+            android:text="Share your code or enter your partner's to connect"
+            android:textColor="#9E9E9E"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/titleText" />
+
+        <!-- Name input -->
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/yourName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="28dp"
+            android:layout_marginEnd="28dp"
             android:background="@drawable/button_shape_light"
-            android:ems="10"
             android:gravity="center"
             android:hint="Your Name"
             android:inputType="textPersonName"
-            android:minHeight="48dp"
+            android:minHeight="52dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.2" />
+            app:layout_constraintVertical_bias="0.22" />
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editRoomId"
+        <!-- "Your Space Code" section label -->
+        <TextView
+            android:id="@+id/codeSectionLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:background="@drawable/button_shape_light"
-            android:ems="10"
-            android:gravity="center"
-            android:hint="Partner's Code"
-            android:inputType="textPersonName"
-            android:minHeight="48dp"
-            app:layout_constraintEnd_toEndOf="@+id/yourName"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="@+id/yourName"
-            app:layout_constraintTop_toBottomOf="@+id/yourName" />
+            android:letterSpacing="0.08"
+            android:text="YOUR SPACE CODE"
+            android:textAllCaps="true"
+            android:textColor="#BDBDBD"
+            android:textSize="11sp"
+            app:layout_constraintStart_toStartOf="@id/yourName"
+            app:layout_constraintTop_toBottomOf="@id/yourName" />
 
-        <TextView
-            android:id="@+id/orText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:gravity="center"
-            android:text="OR"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            android:textColor="#D600A7"
-            app:fontFamily="cursive"
-            app:layout_constraintEnd_toEndOf="@id/editRoomId"
-            app:layout_constraintStart_toStartOf="@id/editRoomId"
-            app:layout_constraintTop_toBottomOf="@id/editRoomId" />
-
-
+        <!-- Code chip — full-width, tappable to copy -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraintLayout"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            app:layout_constraintEnd_toEndOf="@+id/orText"
-            app:layout_constraintStart_toStartOf="@+id/orText"
-            app:layout_constraintTop_toBottomOf="@+id/orText">
+            android:layout_marginTop="6dp"
+            app:layout_constraintEnd_toEndOf="@id/yourName"
+            app:layout_constraintStart_toStartOf="@id/yourName"
+            app:layout_constraintTop_toBottomOf="@id/codeSectionLabel">
 
             <TextView
                 android:id="@+id/yourRoomId"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:background="@drawable/button_dark_shape"
-                android:gravity="center|left"
-                android:paddingStart="15dp"
-                android:paddingEnd="15dp"
-                android:text="share your code : "
+                android:gravity="center"
+                android:paddingStart="20dp"
+                android:paddingEnd="48dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:text="your space: "
                 android:textColor="#fff"
-                android:textSize="20dp"
+                android:textSize="22sp"
                 app:fontFamily="cursive"
                 app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingRight="15dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginEnd="14dp"
                 android:src="@drawable/ic_arrow_share_icon"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -118,95 +124,200 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <Button
-            android:id="@+id/submitButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="60dp"
-            android:background="@drawable/button_dark_shape"
-            android:shadowColor="#A8A8A8"
-            android:shadowDx="0"
-            android:shadowDy="0"
-            android:shadowRadius="5"
-            android:text="Create"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            app:layout_constraintEnd_toEndOf="@+id/constraintLayout"
-            app:layout_constraintStart_toStartOf="@+id/constraintLayout"
-            app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
-
         <TextView
+            android:id="@+id/tapToCopyHint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:gravity="left"
+            android:layout_marginTop="4dp"
+            android:text="Tap to copy"
+            android:textColor="#BDBDBD"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="@id/constraintLayout"
+            app:layout_constraintTop_toBottomOf="@id/constraintLayout" />
+
+        <!-- Divider: "— or join your partner's space —" -->
+        <TextView
+            android:id="@+id/orText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:text="— or join your partner's space —"
+            android:textColor="#D600A7"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="@id/constraintLayout"
+            app:layout_constraintStart_toStartOf="@id/constraintLayout"
+            app:layout_constraintTop_toBottomOf="@id/tapToCopyHint" />
+
+        <!-- Partner's code input -->
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editRoomId"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/button_shape_light"
+            android:gravity="center"
+            android:hint="Partner's Space Code"
+            android:inputType="phone"
+            android:minHeight="52dp"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
-            android:text="You can leave Partner's Code field as empty if your partner enter your code in their App"
-            android:textColor="#5E5D5D"
+            app:layout_constraintEnd_toEndOf="@id/yourName"
+            app:layout_constraintStart_toStartOf="@id/yourName"
+            app:layout_constraintTop_toBottomOf="@id/orText" />
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/button_dark_shape"
+            android:text="Create Space"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="@id/yourName"
+            app:layout_constraintStart_toStartOf="@id/yourName"
+            app:layout_constraintTop_toBottomOf="@id/editRoomId" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:text="Leave the code field empty to create a new space"
+            android:textColor="#BDBDBD"
+            android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/submitButton"
-            app:layout_constraintStart_toStartOf="@+id/submitButton" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- ===== SCREEN 2: Waiting for partner ===== -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/waitingRoomCS"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#D600A7"
+        android:background="@drawable/waiting_gradient"
         android:visibility="invisible"
         tools:context=".CreateOrJoinRoom">
 
         <TextView
             android:id="@+id/titleTextCS"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Wait for your partner to join"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="8dp"
+            android:text="Waiting for your partner..."
             android:textColor="#fff"
-            android:textSize="30dp"
+            android:textSize="26sp"
             app:fontFamily="cursive"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.1"
+            app:layout_constraintEnd_toStartOf="@id/exitButtonCS"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.05" />
+            app:layout_constraintVertical_bias="0.06" />
 
         <ImageButton
             android:id="@+id/exitButtonCS"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="20dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="16dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:minWidth="48dp"
             android:minHeight="48dp"
             android:src="@drawable/ic_baseline_exit"
-            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@id/titleTextCS"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/titleTextCS"
             tools:ignore="SpeakableTextPresentCheck" />
 
+        <!-- Instruction for the user -->
+        <TextView
+            android:id="@+id/waitingInstructionText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="Ask your partner to open CoWall and enter this code"
+            android:textColor="#FFD6F5"
+            android:textSize="15sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/titleTextCS" />
 
+        <!-- "YOUR SPACE CODE" label above the big code -->
+        <TextView
+            android:id="@+id/codeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.12"
+            android:text="YOUR SPACE CODE"
+            android:textAllCaps="true"
+            android:textColor="#FFD6F5"
+            android:textSize="11sp"
+            app:layout_constraintBottom_toTopOf="@id/yourRoomIdCS"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintTop_toBottomOf="@id/waitingInstructionText"
+            app:layout_constraintVertical_bias="0.5" />
+
+        <!-- Big pulsing code -->
         <TextView
             android:id="@+id/yourRoomIdCS"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="50dp"
+            android:layout_marginTop="8dp"
             android:gravity="center"
-            android:paddingStart="15dp"
-            android:paddingEnd="15dp"
-            android:text="Share your code "
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="0000-0000"
             android:textColor="#fff"
-            android:textSize="40dp"
-            app:fontFamily="cursive"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            app:fontFamily="monospace"
+            app:layout_constraintBottom_toTopOf="@id/tapToCopyHintCS"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/codeLabel" />
+
+        <!-- Tap to copy hint -->
+        <TextView
+            android:id="@+id/tapToCopyHintCS"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Tap to copy"
+            android:textColor="#FFD6F5"
+            android:textSize="13sp"
+            app:layout_constraintBottom_toTopOf="@id/shareButtonCS"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/yourRoomIdCS" />
+
+        <!-- Share button -->
+        <Button
+            android:id="@+id/shareButtonCS"
+            android:layout_width="200dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="28dp"
+            android:background="@drawable/button_white_pill"
+            android:text="Share Code"
+            android:textColor="#D600A7"
+            android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/tapToCopyHintCS"
+            app:layout_constraintVertical_bias="0.3" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

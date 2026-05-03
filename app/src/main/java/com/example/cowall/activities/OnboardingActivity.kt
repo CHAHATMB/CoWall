@@ -3,7 +3,11 @@ package com.example.cowall.activities
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -58,8 +62,20 @@ class OnboardingActivity : AppCompatActivity() {
             override fun onPageSelected(position: Int) {
                 updateDots(position)
                 binding.nextButton.text = if (position == pages.size - 1) "Get Started" else "Next"
+                binding.skipButton.visibility = if (position == pages.size - 1) View.INVISIBLE else View.VISIBLE
+                vibratePageChange()
             }
         })
+    }
+
+    @Suppress("DEPRECATION")
+    private fun vibratePageChange() {
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            vibrator.vibrate(30)
+        }
     }
 
     private fun setupDots() {

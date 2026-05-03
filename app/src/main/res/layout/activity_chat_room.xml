@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_primary"
+    android:fitsSystemWindows="true"
     tools:context=".activities.ChatRoomActivity">
 
     <!-- Toolbar -->
@@ -120,6 +121,15 @@
             android:text="Send your first photo"
             android:textColor="@color/text_secondary"
             android:textSize="16sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSendFirstPhoto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:backgroundTint="@color/accent"
+            android:text="Open Camera"
+            android:textColor="@color/white" />
     </LinearLayout>
 
     <!-- Scroll to bottom FAB with unread badge -->

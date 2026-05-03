@@ -71,6 +71,9 @@ class EditProfileActivity : AppCompatActivity() {
             return
         }
 
+        binding.saveButton.isEnabled = false
+        binding.saveButton.text = "Saving..."
+
         val sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
         sharedPref.edit()
             .putString("userName", name)

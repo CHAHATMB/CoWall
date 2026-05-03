@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_primary"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -275,7 +276,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
-                <com.google.android.material.materialswitch.MaterialSwitch
+                <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/pauseUpdatesSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
@@ -286,6 +287,67 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Temporarily stop wallpaper changes from your partner."
+                android:textColor="@color/text_hint"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginTop="16dp" />
+        </LinearLayout>
+
+        <!-- Privacy Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Privacy"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="By default, images use a private link — accessible only if someone knows the unique URL. Enabling this restricts access to your partner&#8217;s Google account only."
+                android:textColor="@color/text_hint"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Secure image sharing"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/secureShareSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/secureShareHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Partner must be signed in with Google to view images."
                 android:textColor="@color/text_hint"
                 android:textSize="12sp" />
 
@@ -339,7 +401,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
-                <com.google.android.material.materialswitch.MaterialSwitch
+                <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/autoResetSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
@@ -515,6 +577,32 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:layout_marginBottom="16dp" />
+
+            <LinearLayout
+                android:id="@+id/spaceHistoryRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Space Join History"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="\u203A"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="20sp" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/leaveRoomButton"

@@ -21,6 +21,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
 
     private val DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file"
+    private val DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
 
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -33,7 +34,7 @@ class LoginActivity : AppCompatActivity() {
             val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 .getResult(ApiException::class.java)
             Log.d("LoginActivity", "Signed in as: ${account.email}")
-            navigateNext()
+            navigateNext(account.displayName)
         } catch (e: ApiException) {
             Log.e("LoginActivity", "Google Sign-In failed: statusCode=${e.statusCode}")
             val errorMsg = when (e.statusCode) {
@@ -67,18 +68,22 @@ class LoginActivity : AppCompatActivity() {
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestScopes(Scope(DRIVE_FILE_SCOPE))
+            .requestScopes(Scope(DRIVE_FILE_SCOPE), Scope(DRIVE_READONLY_SCOPE))
             .build()
 
         signInLauncher.launch(GoogleSignIn.getClient(this, gso).signInIntent)
     }
 
-    private fun navigateNext() {
+    private fun navigateNext(googleDisplayName: String? = null) {
         val sharedPref = getSharedPreferences("cowall", MODE_PRIVATE)
         val destination = if (sharedPref.contains("joinedRoomId")) {
+            // Mark that we need a fresh Firebase sync — user just logged back in.
+            sharedPref.edit().putBoolean("needsChatSync", true).apply()
             Intent(this, ChatRoomActivity::class.java)
         } else {
-            Intent(this, CreateOrJoinRoom::class.java)
+            Intent(this, CreateOrJoinRoom::class.java).apply {
+                googleDisplayName?.let { putExtra(CreateOrJoinRoom.EXTRA_GOOGLE_NAME, it) }
+            }
         }
         destination.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(destination)

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
+import com.example.cowall.data.CachedMessage
 import com.example.cowall.data.MessageModel
 import com.example.cowall.data.User
 import com.example.cowall.data.UserChat
@@ -19,7 +20,9 @@ import com.google.firebase.storage.storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.HttpURLConnection
@@ -36,15 +39,18 @@ class FireBaseConnector : ChatConnector {
 
     private lateinit var database: FirebaseDatabase
     private lateinit var storageRef: FirebaseStorage
+    private lateinit var localCache: ChatLocalCache
     lateinit var context: Context
 
     companion object {
         private const val LOG_TAG = "CoWall"
+        private const val SYNC_MESSAGE_LIMIT = 30
         private var persistenceEnabled = false
 
         lateinit var userUniqueId: String
         lateinit var roomId: String
         var partnerUserName: String = ""
+        var partnerEmail: String = ""
 
         fun setUniqueIds(userId: String, room: String) {
             userUniqueId = userId
@@ -64,6 +70,7 @@ class FireBaseConnector : ChatConnector {
 
     override fun initializeConnection(context: Context) {
         this.context = context
+        localCache = ChatLocalCache(context)
         enablePersistence()
         storageRef = Firebase.storage
         database = Firebase.database
@@ -92,7 +99,6 @@ class FireBaseConnector : ChatConnector {
                 if (userChat.userUniqueId != userUniqueId) {
                     when (userChat.type) {
                         "text" -> {
-                            val senderName = partnerUserName.ifEmpty { userChat.userUniqueId }
                             val msg = MessageModel(
                                 message = userChat.text ?: "",
                                 senderId = userChat.userUniqueId,
@@ -101,9 +107,26 @@ class FireBaseConnector : ChatConnector {
                                 replyToKey = userChat.replyToKey,
                                 replyPreview = userChat.replyPreview
                             )
+                            CoroutineScope(Dispatchers.IO).launch {
+                                localCache.append(roomId, CachedMessage(
+                                    messageKey = messageKey,
+                                    senderId = userChat.userUniqueId,
+                                    type = "text",
+                                    text = userChat.text ?: "",
+                                    timestamp = userChat.timestamp,
+                                    replyToKey = userChat.replyToKey,
+                                    replyPreview = userChat.replyPreview
+                                ))
+                            }
                             messageUpdateCallback?.onMessageUpdated(msg)
                         }
-                        else -> getImageFromFirebase(userChat.uri, userChat.userUniqueId, messageKey = messageKey, replyToKey = userChat.replyToKey, replyPreview = userChat.replyPreview)
+                        else -> getImageFromFirebase(
+                            userChat.uri, userChat.userUniqueId,
+                            messageKey = messageKey,
+                            replyToKey = userChat.replyToKey,
+                            replyPreview = userChat.replyPreview,
+                            timestamp = userChat.timestamp
+                        )
                     }
                 }
             }
@@ -126,12 +149,20 @@ class FireBaseConnector : ChatConnector {
     override fun setWallpaper(imagePath: String) {
         val sharedPref = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
         val target = sharedPref.getString("wallpaperTarget", "lock") ?: "lock"
-        com.example.cowall.utilities.WallpaperHelper.setWallpaper(context, imagePath, target)
+        com.example.cowall.utilities.WallpaperHelper.setWallpaper(context, imagePath, target, partnerUserName)
     }
 
-    fun getImageFromFirebase(imgPath: String, senderId: String = "", setAsWallpaper: Boolean = true, messageKey: String = "", replyToKey: String? = null, replyPreview: String? = null) {
+    fun getImageFromFirebase(
+        imgPath: String,
+        senderId: String = "",
+        setAsWallpaper: Boolean = true,
+        messageKey: String = "",
+        replyToKey: String? = null,
+        replyPreview: String? = null,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
         if (imgPath.startsWith("https://")) {
-            downloadImageFromUrl(imgPath, senderId, setAsWallpaper, messageKey, replyToKey, replyPreview)
+            downloadImageFromUrl(imgPath, senderId, setAsWallpaper, messageKey, replyToKey, replyPreview, timestamp)
             return
         }
 
@@ -140,14 +171,14 @@ class FireBaseConnector : ChatConnector {
         val localFile = File(storageDir, imgPath)
 
         if (localFile.exists()) {
-            dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview)
+            dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview, remoteUri = imgPath, timestamp = timestamp)
             if (setAsWallpaper) setWallpaper(localFile.absolutePath)
             return
         }
 
         imageRef.getFile(localFile)
             .addOnSuccessListener {
-                dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview)
+                dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview, remoteUri = imgPath, timestamp = timestamp)
                 if (setAsWallpaper) setWallpaper(localFile.absolutePath)
             }
             .addOnFailureListener { e ->
@@ -155,21 +186,37 @@ class FireBaseConnector : ChatConnector {
             }
     }
 
-    private fun downloadImageFromUrl(url: String, senderId: String, setAsWallpaper: Boolean, messageKey: String = "", replyToKey: String? = null, replyPreview: String? = null) {
-        val fileName = "${UUID.randomUUID()}.jpg"
+    private fun downloadImageFromUrl(
+        url: String,
+        senderId: String,
+        setAsWallpaper: Boolean,
+        messageKey: String = "",
+        replyToKey: String? = null,
+        replyPreview: String? = null,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val storageDir = File(context.getExternalFilesDir(null), "images").also { it.mkdirs() }
+                // Deterministic filename so the same URL always maps to the same local file,
+                // preventing duplicate downloads and duplicate wallpaper history entries.
+                val fileName = urlToFilename(url)
                 val localFile = File(storageDir, fileName)
 
-                val bytes = fetchUrlBytes(url)
+                if (localFile.exists()) {
+                    dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview, remoteUri = url, timestamp = timestamp)
+                    return@launch
+                }
+
+                val authToken = if (isDriveUrl(url)) getDriveAccessToken() else null
+                val bytes = fetchUrlBytes(url, authToken)
                 if (bytes == null) {
                     Log.e(LOG_TAG, "downloadImageFromUrl: empty response for $url")
                     return@launch
                 }
 
                 localFile.writeBytes(bytes)
-                dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview)
+                dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview, remoteUri = url, timestamp = timestamp)
                 if (setAsWallpaper) setWallpaper(localFile.absolutePath)
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "downloadImageFromUrl failed: $e")
@@ -177,11 +224,33 @@ class FireBaseConnector : ChatConnector {
         }
     }
 
+    private fun urlToFilename(url: String): String {
+        val bytes = java.security.MessageDigest.getInstance("MD5").digest(url.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) } + ".jpg"
+    }
+
+    private fun isDriveUrl(url: String): Boolean =
+        url.contains("drive.usercontent.google.com") || url.contains("googleapis.com/drive")
+
+    private fun getDriveAccessToken(): String? {
+        val account = GoogleSignIn.getLastSignedInAccount(context) ?: return null
+        return try {
+            GoogleAuthUtil.getToken(
+                context,
+                account.account!!,
+                "oauth2:https://www.googleapis.com/auth/drive.readonly"
+            )
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "getDriveAccessToken error: $e")
+            null
+        }
+    }
+
     /**
      * Follows redirects manually across domains (HttpURLConnection won't auto-follow
      * cross-domain redirects on all Android versions).
      */
-    private fun fetchUrlBytes(urlStr: String, redirectsRemaining: Int = 5): ByteArray? {
+    private fun fetchUrlBytes(urlStr: String, authToken: String? = null, redirectsRemaining: Int = 5): ByteArray? {
         if (redirectsRemaining == 0) {
             Log.e(LOG_TAG, "fetchUrlBytes: too many redirects for $urlStr")
             return null
@@ -190,6 +259,7 @@ class FireBaseConnector : ChatConnector {
             connectTimeout = 15_000
             readTimeout = 30_000
             instanceFollowRedirects = false  // handle manually to support cross-domain
+            authToken?.let { setRequestProperty("Authorization", "Bearer $it") }
         }
         return when (val code = conn.responseCode) {
             in 200..299 -> conn.inputStream.use { it.readBytes() }
@@ -200,7 +270,7 @@ class FireBaseConnector : ChatConnector {
                     null
                 } else {
                     Log.d(LOG_TAG, "fetchUrlBytes: redirect $code → $location")
-                    fetchUrlBytes(location, redirectsRemaining - 1)
+                    fetchUrlBytes(location, authToken, redirectsRemaining - 1)
                 }
             }
             else -> {
@@ -210,7 +280,15 @@ class FireBaseConnector : ChatConnector {
         }
     }
 
-    private fun dispatchMessage(localFile: File, senderId: String, messageKey: String = "", replyToKey: String? = null, replyPreview: String? = null) {
+    private fun dispatchMessage(
+        localFile: File,
+        senderId: String,
+        messageKey: String = "",
+        replyToKey: String? = null,
+        replyPreview: String? = null,
+        remoteUri: String? = null,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
         val senderName = partnerUserName.ifEmpty { senderId }
         val msg = if (senderId != userUniqueId) "$senderName set a pic!" else "You set a pic!"
         messageUpdateCallback?.onMessageUpdated(
@@ -218,11 +296,26 @@ class FireBaseConnector : ChatConnector {
                 message = msg,
                 imageUri = Uri.fromFile(localFile),
                 senderId = senderId,
+                timestamp = timestamp,
                 messageKey = messageKey,
                 replyToKey = replyToKey,
                 replyPreview = replyPreview
             )
         )
+        if (messageKey.isNotEmpty()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                localCache.append(roomId, CachedMessage(
+                    messageKey = messageKey,
+                    senderId = senderId,
+                    type = "image",
+                    localImagePath = localFile.absolutePath,
+                    remoteImageUri = remoteUri,
+                    timestamp = timestamp,
+                    replyToKey = replyToKey,
+                    replyPreview = replyPreview
+                ))
+            }
+        }
     }
 
     override fun sendMessage(childPath: String, msg: String) {
@@ -237,26 +330,53 @@ class FireBaseConnector : ChatConnector {
         }
     }
 
-    fun sendUri(uri: String, replyToKey: String? = null, replyPreview: String? = null) {
+    fun sendUri(uri: String, localFilePath: String? = null, replyToKey: String? = null, replyPreview: String? = null) {
         val ref = database.getReference("roomChat/$roomId").push()
         val key = ref.key ?: ""
-        val json = Gson().toJson(UserChat(userUniqueId, uri, System.currentTimeMillis(), type = "image", replyToKey = replyToKey, replyPreview = replyPreview))
+        val timestamp = System.currentTimeMillis()
+        val json = Gson().toJson(UserChat(userUniqueId, uri, timestamp, type = "image", replyToKey = replyToKey, replyPreview = replyPreview))
         ref.setValue(json)
+        if (key.isNotEmpty() && localFilePath != null) {
+            CoroutineScope(Dispatchers.IO).launch {
+                localCache.append(roomId, CachedMessage(
+                    messageKey = key,
+                    senderId = userUniqueId,
+                    type = "image",
+                    localImagePath = localFilePath,
+                    remoteImageUri = uri,
+                    timestamp = timestamp,
+                    replyToKey = replyToKey,
+                    replyPreview = replyPreview
+                ))
+            }
+        }
     }
 
     override fun sendTextMessage(text: String, replyToKey: String?, replyPreview: String?) {
         val ref = database.getReference("roomChat/$roomId").push()
         val key = ref.key ?: ""
-        val json = Gson().toJson(UserChat(userUniqueId, "", System.currentTimeMillis(), type = "text", text = text, replyToKey = replyToKey, replyPreview = replyPreview))
+        val timestamp = System.currentTimeMillis()
+        val json = Gson().toJson(UserChat(userUniqueId, "", timestamp, type = "text", text = text, replyToKey = replyToKey, replyPreview = replyPreview))
         ref.setValue(json)
         val msg = MessageModel(
             message = text,
             senderId = userUniqueId,
-            timestamp = System.currentTimeMillis(),
+            timestamp = timestamp,
             messageKey = key,
             replyToKey = replyToKey,
             replyPreview = replyPreview
         )
+        CoroutineScope(Dispatchers.IO).launch {
+            localCache.append(roomId, CachedMessage(
+                messageKey = key,
+                senderId = userUniqueId,
+                type = "text",
+                text = text,
+                timestamp = timestamp,
+                replyToKey = replyToKey,
+                replyPreview = replyPreview
+            ))
+        }
         messageUpdateCallback?.onMessageUpdated(msg)
     }
 
@@ -267,6 +387,7 @@ class FireBaseConnector : ChatConnector {
             uploadCallback?.onUploadFailure("Failed to compress image")
             return
         }
+        val localFilePath = File(context.getExternalFilesDir(null), "images/$fileName").absolutePath
         uploadCallback?.onUploadStarted()
         val driveManager = GoogleDriveManager()
         CoroutineScope(Dispatchers.IO).launch {
@@ -284,7 +405,14 @@ class FireBaseConnector : ChatConnector {
                     account.account!!,
                     "oauth2:https://www.googleapis.com/auth/drive.file"
                 )
-                val fileId = driveManager.uploadImageToDrive(context, token, compressedUri, fileName)
+                val isSecureShare = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
+                    .getBoolean("secureImageShare", false)
+                val resolvedPartnerEmail = if (isSecureShare) {
+                    partnerEmail.ifEmpty {
+                        fetchPartnerEmailSuspend().also { if (!it.isNullOrEmpty()) partnerEmail = it }
+                    }
+                } else null
+                val fileId = driveManager.uploadImageToDrive(context, token, compressedUri, fileName, resolvedPartnerEmail)
                     ?: run {
                         Log.e(LOG_TAG, "uploadImageToDrive: Drive upload returned null")
                         withContext(Dispatchers.Main) {
@@ -294,13 +422,17 @@ class FireBaseConnector : ChatConnector {
                     }
                 val downloadUrl = driveManager.getDirectDownloadUrl(fileId)
                 Log.d(LOG_TAG, "Drive upload success, sharing URL: $downloadUrl")
-                sendUri(downloadUrl)
+                sendUri(downloadUrl, localFilePath = localFilePath)
                 withContext(Dispatchers.Main) { uploadCallback?.onUploadSuccess() }
             } catch (e: com.google.android.gms.auth.UserRecoverableAuthException) {
-                // Token needs fresh user consent (e.g. scope revoked). Route back to login.
                 Log.w(LOG_TAG, "Drive token needs re-consent: ${e.message}")
                 withContext(Dispatchers.Main) {
                     uploadCallback?.onUploadFailure("Google Drive access expired. Please re-login.")
+                }
+            } catch (e: java.io.IOException) {
+                Log.e(LOG_TAG, "uploadImageToDrive: network error: $e")
+                withContext(Dispatchers.Main) {
+                    uploadCallback?.onUploadFailure("No internet connection. Please check your network and try again.")
                 }
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "uploadImageToDrive error: $e")
@@ -309,6 +441,40 @@ class FireBaseConnector : ChatConnector {
                 }
             }
         }
+    }
+
+    private suspend fun fetchPartnerEmailSuspend(): String? =
+        suspendCancellableCoroutine { continuation ->
+            getPartnerEmail { email ->
+                if (continuation.isActive) continuation.resume(email)
+            }
+        }
+
+    fun getPartnerEmail(callback: (String?) -> Unit) {
+        database.getReference("chatRooms/$roomId/participants")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    for (child in snapshot.children) {
+                        val partnerId = child.key ?: continue
+                        if (partnerId == userUniqueId) continue
+                        database.reference.child("userEmail").child(partnerId)
+                            .addListenerForSingleValueEvent(object : ValueEventListener {
+                                override fun onDataChange(snap: DataSnapshot) {
+                                    callback(snap.getValue(String::class.java))
+                                }
+                                override fun onCancelled(error: DatabaseError) {
+                                    callback(null)
+                                }
+                            })
+                        return
+                    }
+                    callback(null)
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(LOG_TAG, "getPartnerEmail cancelled: $error")
+                    callback(null)
+                }
+            })
     }
 
     private fun compressImage(selectedImage: Uri, imagePath: String): Uri? {
@@ -333,8 +499,18 @@ class FireBaseConnector : ChatConnector {
         return count
     }
 
+    // Clears the Room cache first (on IO), then fetches fresh data from Firebase on the main thread.
     override fun getAllMessageData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            localCache.clear(roomId)
+            withContext(Dispatchers.Main) { fetchAllFromFirebase() }
+        }
+    }
+
+    private fun fetchAllFromFirebase() {
         database.reference.child("roomChat/$roomId")
+            .orderByKey()
+            .limitToLast(SYNC_MESSAGE_LIMIT)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (!snapshot.hasChildren()) return
@@ -352,9 +528,37 @@ class FireBaseConnector : ChatConnector {
                                     replyToKey = userChat.replyToKey,
                                     replyPreview = userChat.replyPreview
                                 )
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    localCache.append(roomId, CachedMessage(
+                                        messageKey = messageKey,
+                                        senderId = userChat.userUniqueId,
+                                        type = "text",
+                                        text = userChat.text ?: "",
+                                        timestamp = userChat.timestamp,
+                                        replyToKey = userChat.replyToKey,
+                                        replyPreview = userChat.replyPreview
+                                    ))
+                                }
                                 messageUpdateCallback?.onMessageUpdated(msg)
                             }
-                            else -> getImageFromFirebase(userChat.uri, userChat.userUniqueId, false, messageKey, userChat.replyToKey, userChat.replyPreview)
+                            else -> {
+                                // Pre-cache with remote URI; local path filled in by dispatchMessage after download.
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    localCache.append(roomId, CachedMessage(
+                                        messageKey = messageKey,
+                                        senderId = userChat.userUniqueId,
+                                        type = "image",
+                                        remoteImageUri = userChat.uri,
+                                        timestamp = userChat.timestamp,
+                                        replyToKey = userChat.replyToKey,
+                                        replyPreview = userChat.replyPreview
+                                    ))
+                                }
+                                getImageFromFirebase(
+                                    userChat.uri, userChat.userUniqueId, false, messageKey,
+                                    userChat.replyToKey, userChat.replyPreview, userChat.timestamp
+                                )
+                            }
                         }
                     }
                 }
@@ -365,36 +569,97 @@ class FireBaseConnector : ChatConnector {
             })
     }
 
-    override fun getPatnerUserName(callback: (String?) -> Unit) {
-        database.getReference("chatRooms/$roomId/participants")
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    for (child in snapshot.children) {
-                        val partnerId = child.key ?: continue
-                        if (partnerId == userUniqueId) continue
-                        database.reference.child("userName").child(partnerId)
-                            .addListenerForSingleValueEvent(object : ValueEventListener {
-                                override fun onDataChange(snap: DataSnapshot) {
-                                    val name = snap.getValue(String::class.java) ?: "Partner"
-                                    if (partnerUserName.isEmpty()) {
-                                        partnerUserName = name
-                                    }
-                                    callback(name)
-                                }
+    override fun loadCachedMessages() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val cached = localCache.load(roomId)
+            val readyMessages = mutableListOf<MessageModel>()
+            val pendingDownloads = mutableListOf<CachedMessage>()
 
-                                override fun onCancelled(error: DatabaseError) {
-                                    callback("Partner")
-                                }
-                            })
-                        return
+            for (msg in cached) {
+                when (msg.type) {
+                    "text" -> readyMessages.add(MessageModel(
+                        message = msg.text,
+                        senderId = msg.senderId,
+                        timestamp = msg.timestamp,
+                        messageKey = msg.messageKey,
+                        replyToKey = msg.replyToKey,
+                        replyPreview = msg.replyPreview
+                    ))
+                    "image" -> {
+                        val localFile = msg.localImagePath?.let { File(it) }
+                        if (localFile != null && localFile.exists()) {
+                            val label = if (msg.senderId == userUniqueId) "You set a pic!"
+                                        else "${partnerUserName.ifEmpty { "Partner" }} set a pic!"
+                            readyMessages.add(MessageModel(
+                                message = label,
+                                imageUri = Uri.fromFile(localFile),
+                                senderId = msg.senderId,
+                                timestamp = msg.timestamp,
+                                messageKey = msg.messageKey,
+                                replyToKey = msg.replyToKey,
+                                replyPreview = msg.replyPreview
+                            ))
+                        } else if (!msg.remoteImageUri.isNullOrEmpty()) {
+                            pendingDownloads.add(msg)
+                        }
                     }
-                    callback(null)
                 }
+            }
 
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e(LOG_TAG, "getPartnerUserName cancelled: $error")
-                    callback(null)
+            withContext(Dispatchers.Main) {
+                messageUpdateCallback?.onMessageGet(readyMessages)
+                // Re-download images whose local files are missing (storage cleared, first install, etc.)
+                // Must run on main thread — Firebase Storage listeners require a Looper.
+                pendingDownloads.forEach { msg ->
+                    getImageFromFirebase(
+                        msg.remoteImageUri!!, msg.senderId, false,
+                        msg.messageKey, msg.replyToKey, msg.replyPreview, msg.timestamp
+                    )
                 }
-            })
+            }
+        }
+    }
+
+    override fun clearMessageCache() {
+        try {
+            val currentRoomId = roomId
+            CoroutineScope(Dispatchers.IO).launch { localCache.clear(currentRoomId) }
+        } catch (_: UninitializedPropertyAccessException) {}
+    }
+
+    override fun getPatnerUserName(callback: (String?) -> Unit) {
+        val participantsRef = database.getReference("chatRooms/$roomId/participants")
+        var listener: ValueEventListener? = null
+        listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (child in snapshot.children) {
+                    val partnerId = child.key ?: continue
+                    if (partnerId == userUniqueId) continue
+                    // Partner found — stop watching participants.
+                    participantsRef.removeEventListener(listener!!)
+                    database.reference.child("userName").child(partnerId)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(snap: DataSnapshot) {
+                                val name = snap.getValue(String::class.java) ?: "Partner"
+                                if (partnerUserName.isEmpty()) {
+                                    partnerUserName = name
+                                }
+                                callback(name)
+                            }
+                            override fun onCancelled(error: DatabaseError) {
+                                callback("Partner")
+                            }
+                        })
+                    return
+                }
+                // Partner not in participants yet — keep listening until they appear.
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(LOG_TAG, "getPartnerUserName cancelled: $error")
+                callback(null)
+            }
+        }
+        participantsRef.addValueEventListener(listener)
     }
 }
