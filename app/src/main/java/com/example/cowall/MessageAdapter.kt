@@ -9,12 +9,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.cowall.activities.PhotoViewActivity
 import com.example.cowall.data.MessageModel
+import com.example.cowall.data.MessageStatus
 import com.example.cowall.utilities.EmojiUtils
 import java.text.SimpleDateFormat
 import java.util.*
@@ -81,6 +84,7 @@ class MessageAdapter(
         val messageText: TextView = itemView.findViewById(R.id.textViewSend)
         val captionText: TextView = itemView.findViewById(R.id.captionText)
         val timestamp: TextView = itemView.findViewById(R.id.timestampText)
+        val uploadProgress: ProgressBar = itemView.findViewById(R.id.uploadProgress)
         val statusIcon: ImageView = itemView.findViewById(R.id.statusIcon)
         val reactionsText: TextView = itemView.findViewById(R.id.reactionsText)
         val replyPreviewContainer: LinearLayout = itemView.findViewById(R.id.replyPreviewContainer)
@@ -130,6 +134,7 @@ class MessageAdapter(
                 holder.timestamp.text = timeStr
                 bindReplyPreview(msg, holder.replyPreviewContainer, holder.replyPreviewText)
                 bindReactions(msg, holder.reactionsText)
+                bindUploadStatus(msg, holder.uploadProgress, holder.statusIcon)
 
                 if (msg.imageUri != null) {
                     holder.image.visibility = View.VISIBLE
@@ -242,6 +247,27 @@ class MessageAdapter(
         }
     }
 
+    private fun bindUploadStatus(msg: MessageModel, spinner: ProgressBar, icon: ImageView) {
+        when {
+            msg.imageUri != null && msg.status == MessageStatus.SENDING -> {
+                spinner.visibility = View.VISIBLE
+                icon.visibility = View.GONE
+            }
+            msg.imageUri != null && msg.status == MessageStatus.FAILED -> {
+                spinner.visibility = View.GONE
+                icon.visibility = View.VISIBLE
+                icon.setImageResource(R.drawable.ic_upload_failed)
+                icon.imageTintList = null
+            }
+            else -> {
+                spinner.visibility = View.GONE
+                icon.visibility = View.VISIBLE
+                icon.setImageResource(R.drawable.ic_done)
+                icon.imageTintList = ContextCompat.getColorStateList(context, R.color.status_tick)
+            }
+        }
+    }
+
     private fun bindReactions(msg: MessageModel, reactionsView: TextView) {
         if (msg.reactions.isNotEmpty()) {
             val emojiCounts = msg.reactions.values.groupingBy { it }.eachCount()
@@ -304,6 +330,17 @@ class MessageAdapter(
     }
 
     fun getDisplayItemCount(): Int = displayItems.size
+
+    fun updateImageUploadStatus(timestamp: Long, status: MessageStatus) {
+        val index = messageList.indexOfFirst {
+            it.imageUri != null && it.timestamp == timestamp && it.messageKey.isEmpty()
+        }
+        if (index >= 0) {
+            messageList[index] = messageList[index].copy(status = status)
+            rebuildDisplayList()
+            notifyDataSetChanged()
+        }
+    }
 
     private fun openFullscreen(msg: MessageModel, imageView: ImageView) {
         val uri = msg.imageUri ?: return

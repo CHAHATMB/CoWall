@@ -21,7 +21,6 @@ import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityOptionsCompat
@@ -44,10 +43,9 @@ import com.example.cowall.databinding.ActivityChatRoomBinding
 import com.example.cowall.utilities.EmojiUtils
 import com.example.cowall.utilities.showConfirmDialog
 import com.example.cowall.utilities.showEmotionalDialog
-import com.example.cowall.utilities.showErrorSnackbar
 import com.example.cowall.utilities.showInfoSnackbar
-import com.example.cowall.utilities.showLoadingDialog
 import com.example.cowall.utilities.showSuccessSnackbar
+import com.example.cowall.data.MessageStatus
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -80,7 +78,7 @@ class ChatRoomActivity : AppCompatActivity(),
 
     private var participantsListener: ValueEventListener? = null
     private var hasHandledPartnerLeft = false
-    private var uploadDialog: AlertDialog? = null
+    private var pendingImageTimestamp: Long = 0L
     private val typingAnimHandler = Handler(Looper.getMainLooper())
     private var typingAnimRunnable: Runnable? = null
 
@@ -92,11 +90,14 @@ class ChatRoomActivity : AppCompatActivity(),
             if (uriString.isNullOrEmpty()) return@registerForActivityResult
             val imageUri = Uri.parse(uriString)
             val caption = binding.captionInput.text.toString().trim().takeIf { it.isNotEmpty() }
+            val imageTimestamp = System.currentTimeMillis()
+            pendingImageTimestamp = imageTimestamp
             adapter.addMessage(MessageModel(
                 message = "You set a pic!",
                 imageUri = imageUri,
                 senderId = FireBaseConnector.userUniqueId,
                 caption = caption,
+                timestamp = imageTimestamp,
                 replyToKey = replyingTo?.messageKey,
                 replyPreview = replyingTo?.let { buildReplyPreview(it) }
             ))
@@ -673,28 +674,22 @@ class ChatRoomActivity : AppCompatActivity(),
         isUploading = true
         binding.cameraButton.isEnabled = false
         binding.cameraButton.alpha = 0.5f
-        uploadDialog = showLoadingDialog("Sending photo...")
     }
 
     override fun onUploadSuccess() {
         isUploading = false
         binding.cameraButton.isEnabled = true
         binding.cameraButton.alpha = 1.0f
-        uploadDialog?.dismiss()
-        uploadDialog = null
-        val partnerName = FireBaseConnector.partnerUserName.ifEmpty { "Partner" }
-        showSuccessSnackbar("Photo sent to $partnerName!")
+        adapter.updateImageUploadStatus(pendingImageTimestamp, MessageStatus.SENT)
+        pendingImageTimestamp = 0L
     }
 
     override fun onUploadFailure(error: String) {
         isUploading = false
         binding.cameraButton.isEnabled = true
         binding.cameraButton.alpha = 1.0f
-        uploadDialog?.dismiss()
-        uploadDialog = null
-        showErrorSnackbar(error, "Retry") {
-            openCamera()
-        }
+        adapter.updateImageUploadStatus(pendingImageTimestamp, MessageStatus.FAILED)
+        pendingImageTimestamp = 0L
     }
 
     // ─── Room lifecycle monitor ────────────────────────────────────

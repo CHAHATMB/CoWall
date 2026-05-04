@@ -7,6 +7,7 @@ import android.provider.MediaStore
 import android.util.Log
 import com.example.cowall.data.CachedMessage
 import com.example.cowall.data.MessageModel
+import com.example.cowall.data.MessageStatus
 import com.example.cowall.data.User
 import com.example.cowall.data.UserChat
 import com.example.cowall.utilities.printLog
@@ -104,6 +105,7 @@ class FireBaseConnector : ChatConnector {
                                 senderId = userChat.userUniqueId,
                                 timestamp = userChat.timestamp,
                                 messageKey = messageKey,
+                                status = MessageStatus.SENT,
                                 replyToKey = userChat.replyToKey,
                                 replyPreview = userChat.replyPreview
                             )
@@ -298,6 +300,7 @@ class FireBaseConnector : ChatConnector {
                 senderId = senderId,
                 timestamp = timestamp,
                 messageKey = messageKey,
+                status = MessageStatus.SENT,
                 replyToKey = replyToKey,
                 replyPreview = replyPreview
             )
@@ -525,6 +528,7 @@ class FireBaseConnector : ChatConnector {
                                     senderId = userChat.userUniqueId,
                                     timestamp = userChat.timestamp,
                                     messageKey = messageKey,
+                                    status = MessageStatus.SENT,
                                     replyToKey = userChat.replyToKey,
                                     replyPreview = userChat.replyPreview
                                 )
@@ -582,6 +586,7 @@ class FireBaseConnector : ChatConnector {
                         senderId = msg.senderId,
                         timestamp = msg.timestamp,
                         messageKey = msg.messageKey,
+                        status = MessageStatus.SENT,
                         replyToKey = msg.replyToKey,
                         replyPreview = msg.replyPreview
                     ))
@@ -596,6 +601,7 @@ class FireBaseConnector : ChatConnector {
                                 senderId = msg.senderId,
                                 timestamp = msg.timestamp,
                                 messageKey = msg.messageKey,
+                                status = MessageStatus.SENT,
                                 replyToKey = msg.replyToKey,
                                 replyPreview = msg.replyPreview
                             ))

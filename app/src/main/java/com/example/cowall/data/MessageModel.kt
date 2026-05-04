@@ -2,7 +2,7 @@ package com.example.cowall.data
 
 import android.net.Uri
 
-enum class MessageStatus { SENDING, SENT, DELIVERED }
+enum class MessageStatus { SENDING, SENT, DELIVERED, FAILED }
 
 data class MessageModel(
     val message: String = "",

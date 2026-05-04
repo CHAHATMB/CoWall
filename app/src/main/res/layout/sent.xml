@@ -84,13 +84,25 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="@dimen/text_micro" />
 
-            <ImageView
-                android:id="@+id/statusIcon"
+            <FrameLayout
                 android:layout_width="14dp"
                 android:layout_height="14dp"
-                android:layout_marginStart="@dimen/spacing_micro"
-                android:src="@drawable/ic_done"
-                app:tint="@color/status_tick" />
+                android:layout_marginStart="@dimen/spacing_micro">
+
+                <ProgressBar
+                    android:id="@+id/uploadProgress"
+                    style="?android:attr/progressBarStyleSmall"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:indeterminateTint="@color/status_tick"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/statusIcon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_done" />
+            </FrameLayout>
         </LinearLayout>
 
         <TextView
