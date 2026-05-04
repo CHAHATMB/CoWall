@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">CoWall</string>
+    <string name="widget_description">Show your shared wallpaper on the home screen</string>
+    <string name="widget_image_description">Shared wallpaper from CoWall</string>
+    <string name="widget_empty_no_image">No moments yet</string>
+    <string name="widget_empty_cleared">Cleared with love</string>
 </resources>

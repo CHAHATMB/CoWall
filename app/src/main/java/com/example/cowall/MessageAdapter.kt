@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.cowall.activities.PhotoViewActivity
 import com.example.cowall.data.MessageModel
+import com.example.cowall.utilities.EmojiUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,6 +33,12 @@ class MessageAdapter(
 
     private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
+    private val bubblePadding = (6 * context.resources.displayMetrics.density).toInt()
+
+    private fun applyBubbleBackground(container: LinearLayout, drawableRes: Int) {
+        container.setBackgroundResource(drawableRes)
+        container.setPadding(bubblePadding, bubblePadding, bubblePadding, bubblePadding)
+    }
 
     // Display list includes date headers interleaved with messages
     private data class DisplayItem(
@@ -140,18 +147,26 @@ class MessageAdapter(
                             openFullscreen(msg, holder.image)
                         }
                     }
-                    // Show caption if present
                     if (!msg.caption.isNullOrEmpty()) {
                         holder.captionText.text = msg.caption
                         holder.captionText.visibility = View.VISIBLE
                     } else {
                         holder.captionText.visibility = View.GONE
                     }
+                    applyBubbleBackground(holder.bubbleContainer, R.drawable.sent_background)
                 } else {
                     holder.image.visibility = View.GONE
                     holder.captionText.visibility = View.GONE
                     holder.messageText.visibility = View.VISIBLE
                     holder.messageText.text = msg.message
+                    if (EmojiUtils.isEmojiOnly(msg.message)) {
+                        holder.messageText.textSize = 40f
+                        holder.bubbleContainer.background = null
+                        holder.bubbleContainer.setPadding(bubblePadding, 0, bubblePadding, 0)
+                    } else {
+                        holder.messageText.textSize = 15f
+                        applyBubbleBackground(holder.bubbleContainer, R.drawable.sent_background)
+                    }
                 }
 
                 holder.bubbleContainer.setOnLongClickListener {
@@ -191,11 +206,20 @@ class MessageAdapter(
                     } else {
                         holder.captionText.visibility = View.GONE
                     }
+                    applyBubbleBackground(holder.bubbleContainer, R.drawable.receive_background)
                 } else {
                     holder.image.visibility = View.GONE
                     holder.captionText.visibility = View.GONE
                     holder.messageText.visibility = View.VISIBLE
                     holder.messageText.text = msg.message
+                    if (EmojiUtils.isEmojiOnly(msg.message)) {
+                        holder.messageText.textSize = 40f
+                        holder.bubbleContainer.background = null
+                        holder.bubbleContainer.setPadding(bubblePadding, 0, bubblePadding, 0)
+                    } else {
+                        holder.messageText.textSize = 15f
+                        applyBubbleBackground(holder.bubbleContainer, R.drawable.receive_background)
+                    }
                 }
 
                 holder.bubbleContainer.setOnLongClickListener {

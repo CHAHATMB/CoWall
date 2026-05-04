@@ -16,6 +16,7 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -30,6 +31,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cowall.CameraActivity
 import com.example.cowall.ChatConnector
+import com.example.cowall.EmojiAnimationOverlay
 import com.example.cowall.FireBaseConnector
 import com.example.cowall.MessageAdapter
 import com.example.cowall.PresenceManager
@@ -39,6 +41,7 @@ import com.example.cowall.RunningService
 import com.example.cowall.SwipeToReplyCallback
 import com.example.cowall.data.MessageModel
 import com.example.cowall.databinding.ActivityChatRoomBinding
+import com.example.cowall.utilities.EmojiUtils
 import com.example.cowall.utilities.showConfirmDialog
 import com.example.cowall.utilities.showEmotionalDialog
 import com.example.cowall.utilities.showErrorSnackbar
@@ -46,6 +49,7 @@ import com.example.cowall.utilities.showInfoSnackbar
 import com.example.cowall.utilities.showLoadingDialog
 import com.example.cowall.utilities.showSuccessSnackbar
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -72,6 +76,7 @@ class ChatRoomActivity : AppCompatActivity(),
 
     private var replyingTo: MessageModel? = null
     private var isUploading = false
+    private var emojiPickerSheet: BottomSheetDialog? = null
 
     private var participantsListener: ValueEventListener? = null
     private var hasHandledPartnerLeft = false
@@ -380,6 +385,26 @@ class ChatRoomActivity : AppCompatActivity(),
                 binding.unreadBadge.visibility = View.VISIBLE
             }
 
+            maybeAnimateEmojiMessage(message)
+        }
+    }
+
+    // Only animate messages that just arrived (within 5 s) to avoid replaying history.
+    private fun maybeAnimateEmojiMessage(message: MessageModel) {
+        if (message.imageUri != null) return
+        if (message.message.isBlank()) return
+        if (message.timestamp <= System.currentTimeMillis() - 5_000L) return
+        if (!EmojiUtils.isEmojiOnly(message.message)) return
+
+        val uniqueEmojis = EmojiUtils.extractUniqueEmojis(message.message)
+        val isSent = message.senderId == FireBaseConnector.userUniqueId
+        when {
+            uniqueEmojis.size == 1 && EmojiUtils.isLoveEmoji(uniqueEmojis.first()) ->
+                binding.emojiAnimationOverlay.startLoveAnimation(isSent)
+            uniqueEmojis.size == 1 ->
+                binding.emojiAnimationOverlay.startFloating(uniqueEmojis.first(), isSent)
+            else ->
+                binding.emojiAnimationOverlay.startBurst(uniqueEmojis)
         }
     }
 
@@ -506,21 +531,47 @@ class ChatRoomActivity : AppCompatActivity(),
 
     private fun showEmojiPicker() {
         val emojis = listOf(
-            "\uD83D\uDE00", "\uD83D\uDE02", "\uD83D\uDE0D", "\uD83E\uDD70", "\uD83D\uDE18",
-            "\uD83D\uDE1C", "\uD83E\uDD23", "\uD83D\uDE4F", "\uD83D\uDC4D", "\u2764\uFE0F",
-            "\uD83D\uDD25", "\uD83C\uDF89", "\uD83C\uDF1F", "\uD83D\uDCAF", "\uD83E\uDD17",
-            "\uD83D\uDE2D", "\uD83D\uDE31", "\uD83D\uDE4C", "\uD83D\uDE0E", "\uD83E\uDD29"
+            "😀", "😂", "😍", "🥰", "😘",
+            "😜", "🤣", "🙏", "👍", "❤️",
+            "🔥", "🎉", "🌟", "💯", "🤗",
+            "😢", "😱", "🙌", "😎", "🤩"
         )
 
-        val emojiDisplay = emojis.toTypedArray()
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Pick an emoji")
-            .setItems(emojiDisplay) { _, which ->
-                val cursor = binding.captionInput.selectionStart
-                val editable = binding.captionInput.text
-                editable?.insert(cursor.coerceAtLeast(0), emojis[which])
+        // Dismiss the soft keyboard so the panel slides up into that space.
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(binding.captionInput.windowToken, 0)
+
+        val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_emoji_picker, null)
+        val grid = sheetView.findViewById<GridLayout>(R.id.emojiGrid)
+
+        val cellSize = (56 * resources.displayMetrics.density).toInt()
+
+        val sheet = BottomSheetDialog(this).also { emojiPickerSheet = it }
+
+        emojis.forEach { emoji ->
+            val tv = TextView(this).apply {
+                text = emoji
+                textSize = 28f
+                gravity = Gravity.CENTER
+                layoutParams = GridLayout.LayoutParams().apply {
+                    width = cellSize
+                    height = cellSize
+                }
+                setOnClickListener {
+                    val cursor = binding.captionInput.selectionStart
+                    binding.captionInput.text?.insert(cursor.coerceAtLeast(0), emoji)
+                    sheet.dismiss()
+                }
             }
-            .show()
+            grid.addView(tv)
+        }
+
+        // Make the dialog window transparent so only our bg_bottom_sheet drawable shows.
+        sheet.setContentView(sheetView)
+        sheet.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        sheet.behavior.skipCollapsed = true
+        sheet.behavior.isDraggable = true
+        sheet.show()
     }
 
     // ─── Reply handling ────────────────────────────────────────────

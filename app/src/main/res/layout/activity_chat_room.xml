@@ -239,4 +239,16 @@
             app:srcCompat="@drawable/ic_baseline_photo_camera_24" />
     </LinearLayout>
 
+    <!-- Emoji animation overlay — renders floating/burst particles on top of chat -->
+    <com.example.cowall.EmojiAnimationOverlay
+        android:id="@+id/emojiAnimationOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

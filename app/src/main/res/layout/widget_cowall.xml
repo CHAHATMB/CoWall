@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RemoteViews-compatible layout: only FrameLayout, LinearLayout, ImageView, TextView are used -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRootFrame"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A2E">
+
+    <ImageView
+        android:id="@+id/widgetImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/widget_image_description"
+        android:visibility="gone" />
+
+    <!-- Shown when no image exists or widget is in CLEARED state -->
+    <LinearLayout
+        android:id="@+id/widgetEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="12dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/widgetEmptyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_empty_no_image"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widgetBrandLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="6dp"
+        android:text="@string/app_name"
+        android:textColor="#66EAEAEA"
+        android:textSize="9sp" />
+
+</FrameLayout>

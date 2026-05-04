@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.cowall.data.AppDatabase
 import com.example.cowall.data.WallpaperHistoryEntry
+import com.example.cowall.widget.CoWallWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,6 +48,9 @@ object WallpaperHelper {
             wallpaperManager.setBitmap(bitmap, null, true, flags)
             Log.d(LOG_TAG, "WallpaperHelper: Wallpaper set successfully (target=$target)")
 
+            saveWidgetPreview(context, bitmap)
+            CoWallWidgetProvider.notifyNewWallpaper(context)
+
             val sharedPref = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
             if (sharedPref.getBoolean("autoResetEnabled", false) && target != "home") {
                 sharedPref.edit().putBoolean("wallpaperPendingReset", true).apply()
@@ -82,6 +86,17 @@ object WallpaperHelper {
             }
         } catch (e: Exception) {
             Log.e(LOG_TAG, "WallpaperHelper: Failed to record history: $e")
+        }
+    }
+
+    private fun saveWidgetPreview(context: Context, bitmap: Bitmap) {
+        try {
+            val file = CoWallWidgetProvider.widgetPreviewFile(context)
+            val scaled = scaleThumbnail(bitmap)
+            file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+            if (scaled !== bitmap) scaled.recycle()
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "WallpaperHelper: Failed to save widget preview: $e")
         }
     }
 

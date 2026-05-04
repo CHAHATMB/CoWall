@@ -13,6 +13,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cowall.FireBaseConnector
+import com.example.cowall.widget.CoWallWidgetProvider
 import com.example.cowall.R
 import com.example.cowall.RunningService
 import com.example.cowall.databinding.ActivitySettingsBinding
@@ -65,6 +66,7 @@ class SettingsActivity : AppCompatActivity() {
         loadSecureShareState()
         loadAutoResetSettings()
         loadAppearanceSettings()
+        loadWidgetState()
         setupListeners()
     }
 
@@ -213,6 +215,24 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.useCurrentButton.setOnClickListener {
             captureCurrentWallpaper()
+        }
+
+        binding.widgetControlGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val action = when (checkedId) {
+                R.id.btnWidgetUpdate -> CoWallWidgetProvider.ACTION_WIDGET_UPDATE
+                R.id.btnWidgetClear  -> CoWallWidgetProvider.ACTION_WIDGET_CLEAR
+                R.id.btnWidgetStop   -> CoWallWidgetProvider.ACTION_WIDGET_STOP
+                else -> return@addOnButtonCheckedListener
+            }
+            sendBroadcast(Intent(action).apply { setPackage(packageName) })
+            val message = when (checkedId) {
+                R.id.btnWidgetUpdate -> "Widget will show new wallpapers"
+                R.id.btnWidgetClear  -> "Widget cleared"
+                R.id.btnWidgetStop   -> "Widget updates stopped"
+                else -> return@addOnButtonCheckedListener
+            }
+            showSuccessSnackbar(message)
         }
     }
 
@@ -407,6 +427,17 @@ class SettingsActivity : AppCompatActivity() {
         val enabled = getSharedPreferences("cowall", Context.MODE_PRIVATE)
             .getBoolean(PREF_SECURE_SHARE, false)
         binding.secureShareSwitch.isChecked = enabled
+    }
+
+    private fun loadWidgetState() {
+        val state = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+            .getString(CoWallWidgetProvider.PREF_WIDGET_STATE, CoWallWidgetProvider.STATE_ACTIVE)
+        val buttonId = when (state) {
+            CoWallWidgetProvider.STATE_CLEARED -> R.id.btnWidgetClear
+            CoWallWidgetProvider.STATE_STOPPED -> R.id.btnWidgetStop
+            else -> R.id.btnWidgetUpdate
+        }
+        binding.widgetControlGroup.check(buttonId)
     }
 
     private fun notifyServiceRefresh() {
