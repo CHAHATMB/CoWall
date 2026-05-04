@@ -127,7 +127,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:backgroundTint="@color/accent"
             android:text="Open Camera"
             android:textColor="@color/white" />
     </LinearLayout>
@@ -208,7 +207,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/input_background"
             android:hint="Add a caption..."
             android:maxLines="3"
             android:paddingHorizontal="12dp"
@@ -222,7 +220,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_small"
-            android:backgroundTint="@color/accent"
             android:contentDescription="Send message"
             android:elevation="@dimen/spacing_micro"
             android:visibility="gone"
@@ -235,7 +232,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_small"
-            android:backgroundTint="@color/accent"
             android:contentDescription="Open camera"
             android:elevation="@dimen/spacing_micro"
             app:borderWidth="0dp"

@@ -31,8 +31,8 @@
         android:text="CoWall"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:textColor="#ffffff"
-        android:textSize="@dimen/text_huge"
-        android:textStyle="bold"
+        style="@style/TextAppearance.CoWall.Headline"
+        
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

@@ -9,6 +9,10 @@
         <item name="colorOnSecondary">@color/text_primary</item>
         <item name="android:statusBarColor" tools:targetApi="l">@color/bg_surface</item>
         <item name="android:windowBackground">@color/bg_primary</item>
+
+        <!-- Global Component Styles -->
+        <item name="materialButtonStyle">@style/Widget.CoWall.Button.Primary</item>
+        <item name="editTextStyle">@style/Widget.CoWall.EditText</item>
     </style>
 
     <style name="Theme.CoWall.PhotoView" parent="Theme.MaterialComponents.NoActionBar">

@@ -95,7 +95,6 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
             android:layout_margin="@dimen/spacing_medium"
-            android:backgroundTint="@color/accent"
             android:contentDescription="@string/app_name"
             android:elevation="6dp"
             app:borderWidth="0dp"

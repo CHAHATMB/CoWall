@@ -23,8 +23,8 @@
             android:layout_height="wrap_content"
             android:text="CoWall"
             android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_giant"
-            android:textStyle="bold"
+            style="@style/TextAppearance.CoWall.Headline.Giant"
+            
             android:layout_gravity="center"
             android:layout_marginBottom="@dimen/spacing_small" />
 
@@ -82,7 +82,6 @@
             android:layout_height="56dp"
             android:text="Continue with Google"
             android:textColor="@color/bg_primary"
-            android:backgroundTint="@color/accent"
             android:textSize="@dimen/text_large"
             android:textStyle="bold" />
 

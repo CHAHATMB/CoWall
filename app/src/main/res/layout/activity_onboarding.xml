@@ -55,7 +55,6 @@
             android:id="@+id/nextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/accent"
             android:text="Next"
             android:textColor="@color/white"
             app:cornerRadius="12dp" />

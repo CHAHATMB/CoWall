@@ -77,8 +77,8 @@
                 android:layout_height="wrap_content"
                 android:text="9:41"
                 android:textColor="@color/white"
-                android:textSize="@dimen/text_giant"
-                android:textStyle="bold"
+                style="@style/TextAppearance.CoWall.Headline.Giant"
+                
                 android:shadowColor="#80000000"
                 android:shadowDx="0"
                 android:shadowDy="2"
@@ -146,7 +146,6 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/spacing_xlarge"
         android:layout_marginBottom="@dimen/spacing_xlarge"
-        android:backgroundTint="@color/accent"
         android:text="Set Wallpaper"
         android:textColor="@color/white"
         android:textSize="@dimen/text_large"
