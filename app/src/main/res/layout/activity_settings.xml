@@ -34,10 +34,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="@dimen/spacing_small"
                 android:text="Settings"
                 android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_xlarge"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -46,7 +46,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -63,8 +63,8 @@
                 android:layout_height="wrap_content"
                 android:text="Your Name"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp" />
+                android:textSize="@dimen/text_large"
+                android:layout_marginBottom="@dimen/spacing_micro" />
 
             <TextView
                 android:id="@+id/userEmailText"
@@ -72,13 +72,13 @@
                 android:layout_height="wrap_content"
                 android:text="email@example.com"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_medium" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Wallpaper Target Section -->
@@ -86,8 +86,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -142,7 +142,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:padding="@dimen/spacing_small">
 
                 <TextView
                     android:layout_width="0dp"
@@ -164,7 +164,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Appearance Section -->
@@ -172,8 +172,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -191,7 +191,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:padding="@dimen/spacing_small">
 
                 <TextView
                     android:layout_width="0dp"
@@ -207,18 +207,18 @@
                     android:layout_height="wrap_content"
                     android:text="Dark"
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="@dimen/text_medium" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/notificationSoundRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/spacing_micro"
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:padding="@dimen/spacing_small">
 
                 <TextView
                     android:layout_width="0dp"
@@ -234,14 +234,14 @@
                     android:layout_height="wrap_content"
                     android:text="Default"
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="@dimen/text_medium" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Pause Updates Section -->
@@ -249,8 +249,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -266,7 +266,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="4dp">
+                android:layout_marginBottom="@dimen/spacing_micro">
 
                 <TextView
                     android:layout_width="0dp"
@@ -288,13 +288,13 @@
                 android:layout_height="wrap_content"
                 android:text="Temporarily stop wallpaper changes from your partner."
                 android:textColor="@color/text_hint"
-                android:textSize="12sp" />
+                android:textSize="@dimen/text_small" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Privacy Section -->
@@ -302,8 +302,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -312,14 +312,14 @@
                 android:textColor="@color/accent"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
+                android:layout_marginBottom="@dimen/spacing_micro" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="By default, images use a private link — accessible only if someone knows the unique URL. Enabling this restricts access to your partner&#8217;s Google account only."
                 android:textColor="@color/text_hint"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_small"
                 android:layout_marginBottom="12dp" />
 
             <LinearLayout
@@ -327,7 +327,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="4dp">
+                android:layout_marginBottom="@dimen/spacing_micro">
 
                 <TextView
                     android:layout_width="0dp"
@@ -349,13 +349,13 @@
                 android:layout_height="wrap_content"
                 android:text="Partner must be signed in with Google to view images."
                 android:textColor="@color/text_hint"
-                android:textSize="12sp" />
+                android:textSize="@dimen/text_small" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Auto-Reset Wallpaper Section -->
@@ -364,8 +364,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -374,7 +374,7 @@
                 android:textColor="@color/accent"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
+                android:layout_marginBottom="@dimen/spacing_micro" />
 
             <TextView
                 android:id="@+id/autoResetSubtitle"
@@ -382,7 +382,7 @@
                 android:layout_height="wrap_content"
                 android:text="Lock screen only. Resets wallpaper after you unlock."
                 android:textColor="@color/text_hint"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_small"
                 android:layout_marginBottom="12dp" />
 
             <!-- Enable toggle -->
@@ -414,7 +414,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:visibility="gone"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="@dimen/spacing_medium">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -467,7 +467,7 @@
                     android:text="Default wallpaper"
                     android:textColor="@color/text_primary"
                     android:textSize="15sp"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="@dimen/spacing_small" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -497,7 +497,7 @@
                             android:layout_height="wrap_content"
                             android:text="Choose from Gallery"
                             android:textColor="@color/text_primary"
-                            android:layout_marginBottom="4dp" />
+                            android:layout_marginBottom="@dimen/spacing_micro" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/useCurrentButton"
@@ -514,7 +514,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Room Info Section -->
@@ -522,8 +522,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -539,14 +539,14 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="@dimen/spacing_small">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Room Code: "
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="@dimen/text_medium" />
 
                 <TextView
                     android:id="@+id/roomCodeText"
@@ -555,7 +555,7 @@
                     android:layout_weight="1"
                     android:text="12345678"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_large"
                     android:textStyle="bold" />
 
                 <TextView
@@ -564,9 +564,9 @@
                     android:layout_height="wrap_content"
                     android:text="Copy"
                     android:textColor="@color/accent"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_medium"
                     android:textStyle="bold"
-                    android:padding="8dp" />
+                    android:padding="@dimen/spacing_small" />
             </LinearLayout>
 
             <TextView
@@ -575,8 +575,8 @@
                 android:layout_height="wrap_content"
                 android:text="Partner: Unknown"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                android:layout_marginBottom="16dp" />
+                android:textSize="@dimen/text_medium"
+                android:layout_marginBottom="@dimen/spacing_medium" />
 
             <LinearLayout
                 android:id="@+id/spaceHistoryRow"
@@ -586,7 +586,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:padding="@dimen/spacing_small">
 
                 <TextView
                     android:layout_width="0dp"
@@ -618,7 +618,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- About Section -->
@@ -626,8 +626,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_medium">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -644,8 +644,8 @@
                 android:layout_height="wrap_content"
                 android:text="CoWall v1.0"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                android:layout_marginBottom="16dp" />
+                android:textSize="@dimen/text_medium"
+                android:layout_marginBottom="@dimen/spacing_medium" />
         </LinearLayout>
 
         <!-- Logout Button -->
@@ -654,8 +654,8 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="32dp"
+            android:layout_marginHorizontal="@dimen/spacing_medium"
+            android:layout_marginBottom="@dimen/spacing_xlarge"
             android:text="Sign Out"
             android:textColor="@color/error_red" />
 

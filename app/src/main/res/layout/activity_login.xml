@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginHorizontal="32dp"
+        android:layout_marginHorizontal="@dimen/spacing_xlarge"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -23,10 +23,10 @@
             android:layout_height="wrap_content"
             android:text="CoWall"
             android:textColor="@color/text_primary"
-            android:textSize="48sp"
+            android:textSize="@dimen/text_giant"
             android:textStyle="bold"
             android:layout_gravity="center"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="@dimen/spacing_small" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -53,7 +53,7 @@
                 android:layout_marginBottom="10dp"
                 android:text="📸  Capture and share photos with your partner"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_medium" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -63,7 +63,7 @@
                 android:layout_marginBottom="10dp"
                 android:text="🖼️  Auto-set each other's wallpaper in real time"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_medium" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -72,7 +72,7 @@
                 android:padding="14dp"
                 android:text="✨  Apply beautiful filters before sending"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_medium" />
 
         </LinearLayout>
 
@@ -83,7 +83,7 @@
             android:text="Continue with Google"
             android:textColor="@color/bg_primary"
             android:backgroundTint="@color/accent"
-            android:textSize="16sp"
+            android:textSize="@dimen/text_large"
             android:textStyle="bold" />
 
         <ProgressBar
@@ -92,7 +92,7 @@
             android:layout_height="wrap_content"
             android:visibility="gone"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="24dp" />
+            android:layout_marginTop="@dimen/spacing_large" />
 
     </LinearLayout>
 

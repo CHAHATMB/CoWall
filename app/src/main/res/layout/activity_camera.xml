@@ -47,8 +47,8 @@
         <!-- Close Button (top-left) -->
         <ImageButton
             android:id="@+id/closeButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/spacing_xxlarge"
+            android:layout_height="@dimen/spacing_xxlarge"
             android:layout_gravity="start|top"
             android:layout_margin="12dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
@@ -58,8 +58,8 @@
         <!-- Flash Button (top-right) -->
         <ImageButton
             android:id="@+id/flashButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/spacing_xxlarge"
+            android:layout_height="@dimen/spacing_xxlarge"
             android:layout_gravity="end|top"
             android:layout_margin="12dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
@@ -69,10 +69,10 @@
         <!-- Switch Camera Button (bottom-right) -->
         <ImageButton
             android:id="@+id/switchCameraButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/spacing_xxlarge"
+            android:layout_height="@dimen/spacing_xxlarge"
             android:layout_gravity="bottom|end"
-            android:layout_margin="24dp"
+            android:layout_margin="@dimen/spacing_large"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_switch_camera_icon"
             android:contentDescription="Switch Camera" />
@@ -80,10 +80,10 @@
         <!-- Gallery Button (bottom-left) -->
         <ImageButton
             android:id="@+id/galleryButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/spacing_xxlarge"
+            android:layout_height="@dimen/spacing_xxlarge"
             android:layout_gravity="bottom|start"
-            android:layout_margin="24dp"
+            android:layout_margin="@dimen/spacing_large"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Choose from Gallery"
             android:src="@drawable/ic_gallery_icon" />
@@ -94,7 +94,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
-            android:layout_margin="16dp"
+            android:layout_margin="@dimen/spacing_medium"
             android:backgroundTint="@color/accent"
             android:contentDescription="@string/app_name"
             android:elevation="6dp"

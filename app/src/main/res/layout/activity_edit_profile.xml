@@ -34,10 +34,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="@dimen/spacing_small"
                 android:text="Edit Profile"
                 android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_xlarge"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -45,8 +45,8 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginTop="@dimen/spacing_xlarge"
+            android:layout_marginBottom="@dimen/spacing_large"
             android:gravity="center">
 
             <com.google.android.material.imageview.ShapeableImageView
@@ -63,10 +63,10 @@
 
             <ImageView
                 android:id="@+id/avatarCameraOverlay"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="@dimen/spacing_xlarge"
+                android:layout_height="@dimen/spacing_xlarge"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="4dp"
+                android:layout_marginBottom="@dimen/spacing_micro"
                 android:background="@color/accent"
                 android:padding="6dp"
                 android:src="@drawable/ic_baseline_photo_camera_24"
@@ -78,8 +78,8 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="24dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginHorizontal="@dimen/spacing_large"
+            android:layout_marginBottom="@dimen/spacing_medium"
             android:hint="Display Name"
             app:boxStrokeColor="@color/accent"
             app:hintTextColor="@color/accent">
@@ -89,7 +89,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_large"
                 android:maxLength="30" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -97,8 +97,8 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="24dp"
-            android:layout_marginBottom="32dp"
+            android:layout_marginHorizontal="@dimen/spacing_large"
+            android:layout_marginBottom="@dimen/spacing_xlarge"
             android:hint="Status / Mood"
             app:boxStrokeColor="@color/accent"
             app:hintTextColor="@color/accent"
@@ -110,7 +110,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_large"
                 android:maxLength="100" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -119,11 +119,11 @@
             android:id="@+id/saveButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="24dp"
+            android:layout_marginHorizontal="@dimen/spacing_large"
             android:backgroundTint="@color/accent"
             android:text="Save Profile"
             android:textColor="@color/white"
-            android:textSize="16sp"
+            android:textSize="@dimen/text_large"
             app:cornerRadius="12dp" />
 
     </LinearLayout>

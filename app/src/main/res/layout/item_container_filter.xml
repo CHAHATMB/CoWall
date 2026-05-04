@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_marginStart="8dp"
-    android:layout_marginLeft="8dp"
+    android:layout_marginStart="@dimen/spacing_small"
+    android:layout_marginLeft="@dimen/spacing_small"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -18,7 +18,7 @@
         android:id="@+id/textFilterName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="@dimen/spacing_micro"
         android:ellipsize="end"
         android:gravity="center"
         android:includeFontPadding="false"

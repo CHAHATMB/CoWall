@@ -18,7 +18,7 @@
         android:minHeight="?actionBarSize"
         android:orientation="horizontal"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="4dp"
+        android:paddingVertical="@dimen/spacing_micro"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:text="Partner"
                 android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_xlarge"
                 android:textStyle="bold" />
 
             <TextView
@@ -41,7 +41,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_small"
                 android:visibility="gone"
                 tools:text="Online"
                 tools:visibility="visible" />
@@ -51,7 +51,7 @@
             android:id="@+id/galleryButton"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="@dimen/spacing_micro"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Photo gallery"
             android:src="@drawable/ic_gallery_grid" />
@@ -75,7 +75,7 @@
         android:paddingVertical="6dp"
         android:text="No internet connection"
         android:textColor="@color/black"
-        android:textSize="12sp"
+        android:textSize="@dimen/text_small"
         android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/header_linear_layout" />
 
@@ -86,7 +86,7 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:layoutAnimation="@anim/layout_animation_fall_down"
-        android:paddingBottom="8dp"
+        android:paddingBottom="@dimen/spacing_small"
         app:layout_constraintBottom_toTopOf="@id/replyBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -110,7 +110,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="\uD83D\uDCF7"
-            android:textSize="48sp" />
+            android:textSize="@dimen/text_giant" />
 
         <TextView
             android:id="@+id/emptyStateText"
@@ -120,7 +120,7 @@
             android:gravity="center"
             android:text="Send your first photo"
             android:textColor="@color/text_secondary"
-            android:textSize="16sp" />
+            android:textSize="@dimen/text_large" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSendFirstPhoto"
@@ -137,8 +137,8 @@
         android:id="@+id/scrollToBottomContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="@dimen/spacing_medium"
+        android:layout_marginBottom="@dimen/spacing_small"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/replyBar"
         app:layout_constraintEnd_toEndOf="parent">
@@ -150,7 +150,7 @@
             android:backgroundTint="@color/bg_surface"
             android:contentDescription="Scroll to bottom"
             app:borderWidth="0dp"
-            app:elevation="4dp"
+            app:elevation="@dimen/spacing_micro"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_arrow_down"
             app:tint="@color/text_primary" />
@@ -163,7 +163,7 @@
             android:background="@color/accent"
             android:gravity="center"
             android:textColor="@color/white"
-            android:textSize="10sp"
+            android:textSize="@dimen/text_micro"
             android:textStyle="bold"
             android:visibility="gone" />
 
@@ -188,8 +188,8 @@
         android:background="@color/bg_surface"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="8dp"
+        android:paddingHorizontal="@dimen/spacing_small"
+        android:paddingVertical="@dimen/spacing_small"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -198,7 +198,7 @@
             android:id="@+id/emojiButton"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="@dimen/spacing_micro"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Emoji"
             android:src="@drawable/ic_emoji" />
@@ -221,10 +221,10 @@
             android:id="@+id/sendButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/spacing_small"
             android:backgroundTint="@color/accent"
             android:contentDescription="Send message"
-            android:elevation="4dp"
+            android:elevation="@dimen/spacing_micro"
             android:visibility="gone"
             app:borderWidth="0dp"
             app:fabSize="mini"
@@ -234,10 +234,10 @@
             android:id="@+id/cameraButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/spacing_small"
             android:backgroundTint="@color/accent"
             android:contentDescription="Open camera"
-            android:elevation="4dp"
+            android:elevation="@dimen/spacing_micro"
             app:borderWidth="0dp"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_baseline_photo_camera_24" />

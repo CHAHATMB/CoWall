@@ -14,7 +14,7 @@
         android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent"
         android:background="@color/bg_surface"
-        android:padding="8dp">
+        android:padding="@dimen/spacing_small">
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/imageBack"
             android:layout_width="40dp"
@@ -68,8 +68,8 @@
         android:layout_height="wrap_content"
         android:clipToPadding="false"
         android:orientation="horizontal"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
+        android:paddingTop="@dimen/spacing_small"
+        android:paddingBottom="@dimen/spacing_small"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintBottom_toBottomOf="parent"
         tools:listitem="@layout/item_container_filter" />

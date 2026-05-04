@@ -4,18 +4,18 @@
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="24dp">
+    android:padding="@dimen/spacing_large">
 
     <ProgressBar
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="@dimen/spacing_xlarge"
+        android:layout_height="@dimen/spacing_xlarge"
         android:indeterminate="true" />
 
     <TextView
         android:id="@+id/loadingMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="@dimen/spacing_medium"
         android:text="Loading..."
         android:textColor="@color/text_primary"
         android:textSize="15sp" />

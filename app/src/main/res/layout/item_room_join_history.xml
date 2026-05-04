@@ -5,7 +5,7 @@
     android:background="?android:attr/selectableItemBackground"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingHorizontal="16dp"
+    android:paddingHorizontal="@dimen/spacing_medium"
     android:paddingVertical="14dp">
 
     <LinearLayout
@@ -37,6 +37,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:textSize="@dimen/text_small" />
 
 </LinearLayout>

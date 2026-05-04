@@ -29,10 +29,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/spacing_small"
             android:text="Space Join History"
             android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_xlarge"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="&#x1F6AA;"
-            android:textSize="48sp" />
+            android:textSize="@dimen/text_giant" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -67,7 +67,7 @@
             android:layout_marginTop="12dp"
             android:text="No spaces joined yet"
             android:textColor="@color/text_secondary"
-            android:textSize="16sp" />
+            android:textSize="@dimen/text_large" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:gravity="end"
     android:paddingHorizontal="12dp"
-    android:paddingVertical="4dp">
+    android:paddingVertical="@dimen/spacing_micro">
 
     <LinearLayout
         android:id="@+id/bubbleContainer"
@@ -22,7 +22,7 @@
             android:orientation="horizontal"
             android:background="@color/accent_dark"
             android:padding="6dp"
-            android:layout_marginBottom="4dp"
+            android:layout_marginBottom="@dimen/spacing_micro"
             android:visibility="gone">
 
             <View
@@ -36,7 +36,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_primary"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_small"
                 android:maxLines="2"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -53,17 +53,17 @@
             android:id="@+id/captionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="4dp"
-            android:paddingTop="4dp"
+            android:paddingHorizontal="@dimen/spacing_micro"
+            android:paddingTop="@dimen/spacing_micro"
             android:textColor="@color/text_primary"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_medium"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/textViewSend"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="4dp"
+            android:paddingHorizontal="@dimen/spacing_micro"
             android:paddingVertical="2dp"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
@@ -74,21 +74,21 @@
             android:layout_height="wrap_content"
             android:gravity="end|center_vertical"
             android:orientation="horizontal"
-            android:paddingTop="4dp"
-            android:paddingHorizontal="4dp">
+            android:paddingTop="@dimen/spacing_micro"
+            android:paddingHorizontal="@dimen/spacing_micro">
 
             <TextView
                 android:id="@+id/timestampText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:textSize="@dimen/text_micro" />
 
             <ImageView
                 android:id="@+id/statusIcon"
                 android:layout_width="14dp"
                 android:layout_height="14dp"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="@dimen/spacing_micro"
                 android:src="@drawable/ic_done"
                 app:tint="@color/status_tick" />
         </LinearLayout>
@@ -97,7 +97,7 @@
             android:id="@+id/reactionsText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="@dimen/spacing_micro"
             android:background="@drawable/reaction_pill_background"
             android:textSize="13sp"
             android:visibility="gone" />

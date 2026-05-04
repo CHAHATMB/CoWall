@@ -16,9 +16,9 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_gravity="top|end"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/spacing_medium"
         android:background="@drawable/ic_back_arrow"
         android:contentDescription="Close"
-        android:padding="8dp" />
+        android:padding="@dimen/spacing_small" />
 
 </FrameLayout>

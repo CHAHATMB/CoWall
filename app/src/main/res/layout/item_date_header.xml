@@ -11,8 +11,8 @@
         android:layout_height="wrap_content"
         android:background="@drawable/reaction_pill_background"
         android:paddingHorizontal="14dp"
-        android:paddingVertical="4dp"
+        android:paddingVertical="@dimen/spacing_micro"
         android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:textSize="@dimen/text_small" />
 
 </LinearLayout>
