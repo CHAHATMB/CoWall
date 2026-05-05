@@ -7,13 +7,16 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.cowall.FireBaseConnector
+import com.example.cowall.GoogleDriveManager
 import com.example.cowall.widget.CoWallWidgetProvider
 import com.example.cowall.R
 import com.example.cowall.RunningService
@@ -25,10 +28,14 @@ import com.example.cowall.utilities.showEmotionalConfirmDialog
 import com.example.cowall.utilities.showConfirmDialog
 import com.example.cowall.utilities.showErrorSnackbar
 import com.example.cowall.utilities.showSuccessSnackbar
+import com.google.android.gms.auth.GoogleAuthUtil
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.database.FirebaseDatabase
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -69,6 +76,7 @@ class SettingsActivity : AppCompatActivity() {
         loadAutoResetSettings()
         loadAppearanceSettings()
         loadWidgetState()
+        loadDriveStorageInfo()
         setupListeners()
     }
 
@@ -202,6 +210,10 @@ class SettingsActivity : AppCompatActivity() {
                 showSuccessSnackbar("Secure sharing off — images accessible via private link")
             }
         }
+
+        binding.openDriveFolderRow.setOnClickListener { openDriveFolder() }
+
+        binding.deleteOldImagesRow.setOnClickListener { showDeleteOldImagesDialog() }
 
         binding.autoResetSwitch.setOnCheckedChangeListener { _, isChecked ->
             getSharedPreferences("cowall", Context.MODE_PRIVATE)
@@ -439,7 +451,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun loadSecureShareState() {
         val enabled = getSharedPreferences("cowall", Context.MODE_PRIVATE)
-            .getBoolean(PREF_SECURE_SHARE, false)
+            .getBoolean(PREF_SECURE_SHARE, true)
         binding.secureShareSwitch.isChecked = enabled
     }
 
@@ -466,5 +478,88 @@ class SettingsActivity : AppCompatActivity() {
         getSharedPreferences("cowall", Context.MODE_PRIVATE)
             .edit().putString(PREF_DEFAULT_WALLPAPER_PATH, file.absolutePath).apply()
         binding.defaultWallpaperPreview.setImageBitmap(bitmap)
+    }
+
+    private fun loadDriveStorageInfo() {
+        binding.driveFolderMetaText.text = "Loading..."
+        lifecycleScope.launch {
+            try {
+                val account = GoogleSignIn.getLastSignedInAccount(this@SettingsActivity) ?: run {
+                    binding.driveFolderMetaText.text = "Sign in required"
+                    return@launch
+                }
+                val token = withContext(Dispatchers.IO) {
+                    GoogleAuthUtil.getToken(
+                        this@SettingsActivity,
+                        account.account!!,
+                        "oauth2:https://www.googleapis.com/auth/drive.file"
+                    )
+                }
+                val meta = GoogleDriveManager().getFolderMetadata(this@SettingsActivity, token)
+                binding.driveFolderMetaText.text = "${meta.fileCount} images · ${formatBytes(meta.totalBytes)}"
+            } catch (e: Exception) {
+                Log.e("CoWall", "loadDriveStorageInfo error: $e")
+                binding.driveFolderMetaText.text = "Unable to load"
+            }
+        }
+    }
+
+    private fun openDriveFolder() {
+        val folderId = getSharedPreferences("cowall", Context.MODE_PRIVATE)
+            .getString(GoogleDriveManager.PREF_FOLDER_ID, null)
+        if (folderId == null) {
+            showErrorSnackbar("Folder not found. Share an image first.")
+            return
+        }
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${GoogleDriveManager.DRIVE_FOLDER_URL_PREFIX}$folderId")))
+    }
+
+    private fun showDeleteOldImagesDialog() {
+        val labels = arrayOf("Older than 1 day", "Older than 7 days", "Older than 30 days", "Older than 90 days", "Older than 1 year")
+        val ageMillis = longArrayOf(
+            86_400_000L,
+            7 * 86_400_000L,
+            30 * 86_400_000L,
+            90 * 86_400_000L,
+            365 * 86_400_000L
+        )
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Delete Drive Images")
+            .setItems(labels) { _, which ->
+                deleteOldDriveImages(ageMillis[which], labels[which])
+            }
+            .show()
+    }
+
+    private fun deleteOldDriveImages(ageMs: Long, label: String) {
+        lifecycleScope.launch {
+            try {
+                val account = GoogleSignIn.getLastSignedInAccount(this@SettingsActivity) ?: return@launch
+                val token = withContext(Dispatchers.IO) {
+                    GoogleAuthUtil.getToken(
+                        this@SettingsActivity,
+                        account.account!!,
+                        "oauth2:https://www.googleapis.com/auth/drive.file"
+                    )
+                }
+                val deleted = GoogleDriveManager().deleteFilesOlderThan(this@SettingsActivity, token, ageMs)
+                if (deleted > 0) {
+                    showSuccessSnackbar("Deleted $deleted image${if (deleted == 1) "" else "s"} ($label)")
+                    loadDriveStorageInfo()
+                } else {
+                    showSuccessSnackbar("No images found $label")
+                }
+            } catch (e: Exception) {
+                Log.e("CoWall", "deleteOldDriveImages error: $e")
+                showErrorSnackbar("Failed to delete images")
+            }
+        }
+    }
+
+    private fun formatBytes(bytes: Long): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        bytes < 1024L * 1024 * 1024 -> "${"%.1f".format(bytes / (1024.0 * 1024.0))} MB"
+        else -> "${"%.2f".format(bytes / (1024.0 * 1024.0 * 1024.0))} GB"
     }
 }

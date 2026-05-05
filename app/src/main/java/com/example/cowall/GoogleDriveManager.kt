@@ -10,6 +10,9 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 class GoogleDriveManager {
 
@@ -21,7 +24,11 @@ class GoogleDriveManager {
         private const val BOUNDARY = "==CoWallBoundary=="
         private const val COWALL_FOLDER_NAME = "CoWall"
         private const val FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
+        const val PREF_FOLDER_ID = "cowallFolderId"
+        const val DRIVE_FOLDER_URL_PREFIX = "https://drive.google.com/drive/folders/"
     }
+
+    data class FolderMetadata(val fileCount: Int, val totalBytes: Long, val folderId: String?)
 
     suspend fun uploadImageToDrive(
         context: Context,
@@ -38,7 +45,7 @@ class GoogleDriveManager {
                         return@withContext null
                     }
 
-                val folderId = getOrCreateCowallFolder(accessToken)
+                val folderId = getOrCreateCowallFolder(accessToken, context)
                 val metadata = buildMetadata(fileName, folderId)
                 val body = buildMultipartBody(metadata, imageBytes)
 
@@ -78,6 +85,74 @@ class GoogleDriveManager {
         }
     }
 
+    suspend fun getFolderMetadata(context: Context, accessToken: String): FolderMetadata {
+        return withContext(Dispatchers.IO) {
+            val folderId = getOrCreateCowallFolder(accessToken, context)
+                ?: return@withContext FolderMetadata(0, 0L, null)
+            try {
+                val query = URLEncoder.encode("'$folderId' in parents and trashed=false", "UTF-8")
+                val conn = (URL("$DRIVE_API_FILES?q=$query&fields=files(id,size)&pageSize=1000")
+                    .openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    setRequestProperty("Authorization", "Bearer $accessToken")
+                }
+                if (conn.responseCode !in 200..299) {
+                    Log.e(TAG, "getFolderMetadata list failed HTTP ${conn.responseCode}")
+                    return@withContext FolderMetadata(0, 0L, folderId)
+                }
+                val files = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                    .getJSONArray("files")
+                var totalBytes = 0L
+                for (i in 0 until files.length()) {
+                    totalBytes += files.getJSONObject(i).optLong("size", 0L)
+                }
+                FolderMetadata(files.length(), totalBytes, folderId)
+            } catch (e: Exception) {
+                Log.e(TAG, "getFolderMetadata error: $e")
+                FolderMetadata(0, 0L, folderId)
+            }
+        }
+    }
+
+    suspend fun deleteFilesOlderThan(context: Context, accessToken: String, ageMs: Long): Int {
+        return withContext(Dispatchers.IO) {
+            val folderId = getOrCreateCowallFolder(accessToken, context)
+                ?: return@withContext 0
+            val cutoffMs = System.currentTimeMillis() - ageMs
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            try {
+                val query = URLEncoder.encode("'$folderId' in parents and trashed=false", "UTF-8")
+                val conn = (URL("$DRIVE_API_FILES?q=$query&fields=files(id,createdTime)&pageSize=1000")
+                    .openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    setRequestProperty("Authorization", "Bearer $accessToken")
+                }
+                if (conn.responseCode !in 200..299) {
+                    Log.e(TAG, "deleteFilesOlderThan list failed HTTP ${conn.responseCode}")
+                    return@withContext 0
+                }
+                val files = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                    .getJSONArray("files")
+                var deletedCount = 0
+                for (i in 0 until files.length()) {
+                    val file = files.getJSONObject(i)
+                    val createdMs = try {
+                        dateFormat.parse(file.optString("createdTime", ""))?.time ?: Long.MAX_VALUE
+                    } catch (_: Exception) { Long.MAX_VALUE }
+                    if (createdMs < cutoffMs) {
+                        if (deleteFile(accessToken, file.getString("id"))) deletedCount++
+                    }
+                }
+                deletedCount
+            } catch (e: Exception) {
+                Log.e(TAG, "deleteFilesOlderThan error: $e")
+                0
+            }
+        }
+    }
+
     private fun buildMetadata(fileName: String, folderId: String?): String {
         val json = JSONObject().apply {
             put("name", fileName)
@@ -87,7 +162,11 @@ class GoogleDriveManager {
         return json.toString()
     }
 
-    private fun getOrCreateCowallFolder(accessToken: String): String? {
+    private fun getOrCreateCowallFolder(accessToken: String, context: Context? = null): String? {
+        val prefs = context?.getSharedPreferences("cowall", Context.MODE_PRIVATE)
+        val cachedId = prefs?.getString(PREF_FOLDER_ID, null)
+        if (cachedId != null) return cachedId
+
         return try {
             val query = URLEncoder.encode(
                 "name='$COWALL_FOLDER_NAME' and mimeType='$FOLDER_MIME_TYPE' and trashed=false",
@@ -104,6 +183,7 @@ class GoogleDriveManager {
                 if (files.length() > 0) {
                     val folderId = files.getJSONObject(0).getString("id")
                     Log.d(TAG, "Found existing CoWall folder: $folderId")
+                    prefs?.edit()?.putString(PREF_FOLDER_ID, folderId)?.apply()
                     return folderId
                 }
             }
@@ -127,6 +207,7 @@ class GoogleDriveManager {
             }
             val folderId = JSONObject(createConn.inputStream.bufferedReader().use { it.readText() }).getString("id")
             Log.d(TAG, "Created CoWall folder: $folderId")
+            prefs?.edit()?.putString(PREF_FOLDER_ID, folderId)?.apply()
             folderId
         } catch (e: Exception) {
             Log.e(TAG, "getOrCreateCowallFolder error: $e")
@@ -194,6 +275,26 @@ class GoogleDriveManager {
             }
         } catch (e: Exception) {
             Log.e(TAG, "makeFilePublic error: $e")
+        }
+    }
+
+    private fun deleteFile(accessToken: String, fileId: String): Boolean {
+        return try {
+            val conn = (URL("$DRIVE_API_FILES/$fileId").openConnection() as HttpURLConnection).apply {
+                requestMethod = "DELETE"
+                setRequestProperty("Authorization", "Bearer $accessToken")
+            }
+            val code = conn.responseCode
+            if (code in 200..299 || code == 204) {
+                Log.d(TAG, "Deleted file $fileId")
+                true
+            } else {
+                Log.e(TAG, "deleteFile failed HTTP $code for $fileId")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "deleteFile error for $fileId: $e")
+            false
         }
     }
 

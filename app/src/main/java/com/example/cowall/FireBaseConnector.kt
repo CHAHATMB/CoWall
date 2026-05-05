@@ -409,7 +409,7 @@ class FireBaseConnector : ChatConnector {
                     "oauth2:https://www.googleapis.com/auth/drive.file"
                 )
                 val isSecureShare = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
-                    .getBoolean("secureImageShare", false)
+                    .getBoolean("secureImageShare", true)
                 val resolvedPartnerEmail = if (isSecureShare) {
                     partnerEmail.ifEmpty {
                         fetchPartnerEmailSuspend().also { if (!it.isNullOrEmpty()) partnerEmail = it }
