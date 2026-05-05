@@ -41,13 +41,15 @@ class CoWallWidgetProvider : AppWidgetProvider() {
 
         /**
          * Called by WallpaperHelper after a new wallpaper is set.
-         * Refreshes the widget only when state is ACTIVE; otherwise the preview file is
-         * already updated so the next "Update" tap will show the latest image.
+         * Refreshes the widget only when state is ACTIVE, unless [forceUpdate] is true
+         * (used for user-initiated changes from WallpaperPreviewActivity or auto-reset).
+         * In STOPPED state the preview file is still up-to-date, so the next "Update" tap
+         * in Settings will show the latest image even if we don't force-refresh here.
          */
-        fun notifyNewWallpaper(context: Context) {
+        fun notifyNewWallpaper(context: Context, forceUpdate: Boolean = false) {
             val state = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
                 .getString(PREF_WIDGET_STATE, STATE_ACTIVE) ?: STATE_ACTIVE
-            if (state != STATE_ACTIVE) return
+            if (!forceUpdate && state != STATE_ACTIVE) return
 
             CoroutineScope(Dispatchers.IO).launch {
                 val manager = AppWidgetManager.getInstance(context)

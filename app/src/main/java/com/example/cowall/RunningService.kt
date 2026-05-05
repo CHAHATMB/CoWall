@@ -27,6 +27,7 @@ import com.example.cowall.activities.SettingsActivity.Companion.PREF_WALLPAPER_P
 import com.example.cowall.activities.SettingsActivity.Companion.PREF_WALLPAPER_TARGET
 import com.example.cowall.activities.SettingsActivity.Companion.PREF_UPDATES_PAUSED
 import com.example.cowall.activities.SettingsActivity.Companion.TARGET_HOME
+import com.example.cowall.utilities.WallpaperHelper
 import org.koin.android.ext.android.inject
 
 class RunningService : Service() {
@@ -322,6 +323,7 @@ class RunningService : Service() {
             val wallpaperManager = WallpaperManager.getInstance(this)
             wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
             sharedPref.edit().putBoolean(PREF_WALLPAPER_PENDING_RESET, false).apply()
+            WallpaperHelper.updateWidgetPreview(this, bitmap)
             Log.d(LOG_TAG, "Wallpaper auto-reset to default (lock)")
         } catch (e: Exception) {
             Log.e(LOG_TAG, "Failed to reset wallpaper: $e")

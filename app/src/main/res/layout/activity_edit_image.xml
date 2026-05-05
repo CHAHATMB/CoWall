@@ -4,83 +4,334 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg_primary"
     android:fitsSystemWindows="true"
     tools:context=".activities.EditImageActivity">
+
+    <!-- Top bar -->
     <androidx.appcompat.widget.LinearLayoutCompat
-        android:id="@+id/editImageLinearLayout"
-        android:layout_width="match_parent"
+        android:id="@+id/topBar"
+        android:layout_width="0dp"
         android:layout_height="?actionBarSize"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        app:layout_constraintTop_toTopOf="parent"
         android:background="@color/bg_surface"
-        android:padding="@dimen/spacing_small">
+        android:padding="@dimen/spacing_small"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/imageBack"
             android:layout_width="40dp"
             android:layout_height="match_parent"
-            app:srcCompat="@drawable/ic_back_arrow"
-            />
+            app:srcCompat="@drawable/ic_back_arrow" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_gravity=""
-            android:text="Apply Filter"
-            android:textColor="#fff"
-            android:textSize="25dp"
             android:layout_weight="1"
-            app:fontFamily="sans-serif"
-            android:paddingLeft="10dp"/>
+            android:text="Edit Image"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_xlarge"
+            android:paddingStart="@dimen/spacing_small"
+            android:gravity="center_vertical"
+            app:fontFamily="sans-serif" />
+
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/imageSave"
             android:layout_width="40dp"
             android:layout_height="match_parent"
             app:srcCompat="@drawable/ic_done"
-            app:tint="@color/white"
-            />  
+            app:tint="@color/white" />
     </androidx.appcompat.widget.LinearLayoutCompat>
 
+    <!-- Image preview fills space between toolbar and tool panel -->
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/imagePreview"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:scaleType="centerCrop"
         android:src="@drawable/new_wallpaper"
         android:visibility="visible"
-        app:layout_constraintBottom_toTopOf="@+id/fRecyclerView"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toTopOf="@id/toolPanel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editImageLinearLayout" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <ProgressBar
         android:id="@+id/previewProgressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="@id/imagePreview"
         app:layout_constraintBottom_toBottomOf="@id/imagePreview"
-        app:layout_constraintEnd_toEndOf="@id/imagePreview"
         app:layout_constraintStart_toStartOf="@id/imagePreview"
-        app:layout_constraintTop_toTopOf="@id/imagePreview" />
+        app:layout_constraintEnd_toEndOf="@id/imagePreview" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/fRecyclerView"
-        android:layout_width="match_parent"
+    <!-- Bottom tool panel -->
+    <LinearLayout
+        android:id="@+id/toolPanel"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:clipToPadding="false"
-        android:orientation="horizontal"
-        android:paddingTop="@dimen/spacing_small"
-        android:paddingBottom="@dimen/spacing_small"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        android:orientation="vertical"
+        android:background="@color/bg_surface"
         app:layout_constraintBottom_toBottomOf="parent"
-        tools:listitem="@layout/item_container_filter" />
-    <ProgressBar
-        android:id="@+id/imageFiltersProgressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/fRecyclerView"
-        app:layout_constraintEnd_toEndOf="@id/fRecyclerView"
-        app:layout_constraintStart_toStartOf="@id/fRecyclerView"
-        app:layout_constraintTop_toTopOf="@id/fRecyclerView" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <!-- Tool tab row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/tabFilters"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    app:srcCompat="@drawable/ic_gallery_grid"
+                    app:tint="@color/text_secondary" />
+                <TextView
+                    android:id="@+id/textTabFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Filters"
+                    android:textColor="@color/accent"
+                    android:textSize="@dimen/text_micro" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabIntensity"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    app:srcCompat="@drawable/ic_tune"
+                    app:tint="@color/text_secondary" />
+                <TextView
+                    android:id="@+id/textTabIntensity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Strength"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_micro" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabTint"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    app:srcCompat="@drawable/ic_palette"
+                    app:tint="@color/text_secondary" />
+                <TextView
+                    android:id="@+id/textTabTint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tint"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_micro" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabText"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    app:srcCompat="@drawable/ic_text_fields"
+                    app:tint="@color/text_secondary" />
+                <TextView
+                    android:id="@+id/textTabText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Text"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_micro" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Filters panel (default visible) -->
+        <FrameLayout
+            android:id="@+id/panelFilters"
+            android:layout_width="match_parent"
+            android:layout_height="110dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/fRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:paddingTop="@dimen/spacing_small"
+                android:paddingBottom="@dimen/spacing_small"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_container_filter" />
+
+            <ProgressBar
+                android:id="@+id/imageFiltersProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- Intensity panel -->
+        <LinearLayout
+            android:id="@+id/panelIntensity"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="@dimen/spacing_large"
+            android:paddingVertical="@dimen/spacing_medium"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/textIntensityValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Filter Strength: 100%"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_medium"
+                android:layout_marginBottom="@dimen/spacing_small" />
+
+            <SeekBar
+                android:id="@+id/seekBarIntensity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="100"
+                android:progressTint="@color/accent"
+                android:thumbTint="@color/accent" />
+        </LinearLayout>
+
+        <!-- Tint panel -->
+        <LinearLayout
+            android:id="@+id/panelTint"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_small"
+            android:paddingTop="@dimen/spacing_small"
+            android:paddingBottom="@dimen/spacing_small"
+            android:visibility="gone">
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/tintColorRow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="@dimen/spacing_micro">
+
+                <TextView
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:text="Opacity"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_small" />
+
+                <SeekBar
+                    android:id="@+id/seekBarTintOpacity"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="40"
+                    android:progressTint="@color/accent"
+                    android:thumbTint="@color/accent" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Text overlay panel -->
+        <LinearLayout
+            android:id="@+id/panelText"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingTop="@dimen/spacing_small"
+            android:paddingBottom="@dimen/spacing_small"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/editOverlayText"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:hint="Add your caption..."
+                android:textColorHint="@color/text_hint"
+                android:textColor="@color/text_primary"
+                android:inputType="text"
+                android:maxLines="1"
+                android:imeOptions="actionDone"
+                android:background="@drawable/input_background"
+                android:paddingHorizontal="@dimen/spacing_medium"
+                android:paddingVertical="@dimen/spacing_small"
+                android:textSize="@dimen/text_medium" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingTop="@dimen/spacing_small">
+
+                <LinearLayout
+                    android:id="@+id/textColorRow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+            </HorizontalScrollView>
+        </LinearLayout>
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

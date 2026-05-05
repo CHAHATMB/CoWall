@@ -22,17 +22,17 @@ object WallpaperHelper {
     private const val THUMBNAIL_DIR = "wallpaper_thumbnails"
     private const val THUMBNAIL_MAX_SIZE = 400
 
-    fun setWallpaper(context: Context, imagePath: String, target: String = "lock", userName: String = "") {
+    fun setWallpaper(context: Context, imagePath: String, target: String = "lock", userName: String = "", forceWidgetUpdate: Boolean = false) {
         if (isUpdatesPaused(context)) return
         val bitmap = BitmapFactory.decodeFile(imagePath)
         if (bitmap == null) {
             Log.e(LOG_TAG, "WallpaperHelper: Failed to decode bitmap at: $imagePath")
             return
         }
-        setWallpaper(context, bitmap, target, userName)
+        setWallpaper(context, bitmap, target, userName, forceWidgetUpdate)
     }
 
-    fun setWallpaper(context: Context, bitmap: Bitmap, target: String = "lock", userName: String = "") {
+    fun setWallpaper(context: Context, bitmap: Bitmap, target: String = "lock", userName: String = "", forceWidgetUpdate: Boolean = false) {
         if (isUpdatesPaused(context)) return
         if (target == "stop") {
             Log.d(LOG_TAG, "WallpaperHelper: Target is stop, skipping")
@@ -53,7 +53,7 @@ object WallpaperHelper {
             Log.d(LOG_TAG, "WallpaperHelper: Wallpaper set successfully (target=$target)")
 
             saveWidgetPreview(context, bitmap)
-            CoWallWidgetProvider.notifyNewWallpaper(context)
+            CoWallWidgetProvider.notifyNewWallpaper(context, forceWidgetUpdate)
 
             val sharedPref = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
             if (sharedPref.getBoolean("autoResetEnabled", false) && target != "home") {
@@ -91,6 +91,12 @@ object WallpaperHelper {
         } catch (e: Exception) {
             Log.e(LOG_TAG, "WallpaperHelper: Failed to record history: $e")
         }
+    }
+
+    /** Called by RunningService after an auto-reset to keep the widget preview in sync. */
+    fun updateWidgetPreview(context: Context, bitmap: Bitmap) {
+        saveWidgetPreview(context, bitmap)
+        CoWallWidgetProvider.notifyNewWallpaper(context, forceUpdate = true)
     }
 
     private fun saveWidgetPreview(context: Context, bitmap: Bitmap) {

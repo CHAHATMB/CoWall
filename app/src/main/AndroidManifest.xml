@@ -64,7 +64,8 @@
 
         <activity
             android:name=".activities.EditImageActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustNothing" />
 
         <activity
             android:name=".activities.PhotoViewActivity"

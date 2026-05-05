@@ -112,13 +112,13 @@ class WallpaperPreviewActivity : AppCompatActivity() {
 
         try {
             when {
-                path != null -> WallpaperHelper.setWallpaper(this, path, target, userName)
+                path != null -> WallpaperHelper.setWallpaper(this, path, target, userName, forceWidgetUpdate = true)
                 uri != null -> {
                     val inputStream = contentResolver.openInputStream(uri)
                     val bitmap = BitmapFactory.decodeStream(inputStream)
                     inputStream?.close()
                     if (bitmap != null) {
-                        WallpaperHelper.setWallpaper(this, bitmap, target, userName)
+                        WallpaperHelper.setWallpaper(this, bitmap, target, userName, forceWidgetUpdate = true)
                     } else {
                         showErrorSnackbar("Failed to load image")
                         return
