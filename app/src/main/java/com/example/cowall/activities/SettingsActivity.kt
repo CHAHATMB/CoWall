@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.Glide
 import com.example.cowall.FireBaseConnector
 import com.example.cowall.widget.CoWallWidgetProvider
 import com.example.cowall.R
@@ -42,6 +43,7 @@ class SettingsActivity : AppCompatActivity() {
         const val TARGET_LOCK = "lock"
         const val TARGET_HOME = "home"
         const val TARGET_BOTH = "both"
+        const val TARGET_STOP = "stop"
 
         const val PREF_AUTO_RESET_ENABLED = "autoResetEnabled"
         const val PREF_AUTO_RESET_DELAY_MINUTES = "autoResetDelayMinutes"
@@ -78,6 +80,15 @@ class SettingsActivity : AppCompatActivity() {
         val account = GoogleSignIn.getLastSignedInAccount(this)
         binding.userEmailText.text = account?.email ?: "Not signed in"
 
+        val avatarUrl = sharedPref.getString("avatarUrl", null)
+        if (avatarUrl != null) {
+            binding.profileAvatarInitial.visibility = View.INVISIBLE
+            Glide.with(this).load(avatarUrl).circleCrop().into(binding.profileAvatarImage)
+        } else {
+            binding.profileAvatarInitial.text = userName.firstOrNull()?.uppercase() ?: "?"
+            binding.profileAvatarInitial.visibility = View.VISIBLE
+        }
+
         try {
             val version = packageManager.getPackageInfo(packageName, 0).versionName
             binding.appVersionText.text = "CoWall v$version"
@@ -101,6 +112,7 @@ class SettingsActivity : AppCompatActivity() {
             TARGET_LOCK -> binding.wallpaperTargetGroup.check(R.id.btnLockScreen)
             TARGET_HOME -> binding.wallpaperTargetGroup.check(R.id.btnHomeScreen)
             TARGET_BOTH -> binding.wallpaperTargetGroup.check(R.id.btnBothScreens)
+            TARGET_STOP -> binding.wallpaperTargetGroup.check(R.id.btnStopWallpaper)
         }
     }
 
@@ -110,8 +122,7 @@ class SettingsActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
 
-        binding.userNameText.setOnClickListener { openEditProfile() }
-        binding.userEmailText.setOnClickListener { openEditProfile() }
+        binding.profileRow.setOnClickListener { openEditProfile() }
 
         binding.copyCodeButton.setOnClickListener {
             val code = binding.roomCodeText.text.toString()
@@ -124,11 +135,13 @@ class SettingsActivity : AppCompatActivity() {
                 R.id.btnLockScreen -> TARGET_LOCK
                 R.id.btnHomeScreen -> TARGET_HOME
                 R.id.btnBothScreens -> TARGET_BOTH
+                R.id.btnStopWallpaper -> TARGET_STOP
                 else -> TARGET_LOCK
             }
             getSharedPreferences("cowall", Context.MODE_PRIVATE)
                 .edit().putString(PREF_WALLPAPER_TARGET, target).apply()
-            showSuccessSnackbar("Wallpaper target: ${target.replaceFirstChar { it.uppercase() }}")
+            val label = if (target == TARGET_STOP) "Stopped" else target.replaceFirstChar { it.uppercase() }
+            showSuccessSnackbar("Wallpaper target: $label")
             updateAutoResetAvailability(target)
         }
 
@@ -306,15 +319,16 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateAutoResetAvailability(target: String) {
-        val supported = target != TARGET_HOME
+        val supported = target != TARGET_HOME && target != TARGET_STOP
         binding.autoResetSwitch.isEnabled = supported
         if (!supported && binding.autoResetSwitch.isChecked) {
             binding.autoResetSwitch.isChecked = false
         }
-        binding.autoResetSubtitle.text = if (supported)
-            "Lock screen only. Resets wallpaper after you unlock."
-        else
-            "Not available when wallpaper target is Home only."
+        binding.autoResetSubtitle.text = when {
+            target == TARGET_STOP -> "Not available when wallpaper updates are stopped."
+            target == TARGET_HOME -> "Not available when wallpaper target is Home only."
+            else -> "Lock screen only. Resets wallpaper after you unlock."
+        }
     }
 
     private fun captureCurrentWallpaper() {

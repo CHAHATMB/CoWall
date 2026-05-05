@@ -148,7 +148,7 @@ class GoogleDriveManager {
 
     private fun shareFileWithUser(accessToken: String, fileId: String, partnerEmail: String) {
         try {
-            val conn = (URL("$DRIVE_API_FILES/$fileId/permissions").openConnection() as HttpURLConnection).apply {
+            val conn = (URL("$DRIVE_API_FILES/$fileId/permissions?sendNotificationEmail=false").openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("Authorization", "Bearer $accessToken")
                 setRequestProperty("Content-Type", "application/json")

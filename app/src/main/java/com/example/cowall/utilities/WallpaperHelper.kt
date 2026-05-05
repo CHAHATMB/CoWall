@@ -34,6 +34,10 @@ object WallpaperHelper {
 
     fun setWallpaper(context: Context, bitmap: Bitmap, target: String = "lock", userName: String = "") {
         if (isUpdatesPaused(context)) return
+        if (target == "stop") {
+            Log.d(LOG_TAG, "WallpaperHelper: Target is stop, skipping")
+            return
+        }
         if (ContextCompat.checkSelfPermission(context, SET_WALLPAPER) != PackageManager.PERMISSION_GRANTED) {
             Log.w(LOG_TAG, "WallpaperHelper: SET_WALLPAPER permission not granted")
             return
