@@ -4,12 +4,15 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -19,6 +22,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.example.cowall.DrawingCanvasView
 import com.example.cowall.R
 import com.example.cowall.adapters.ImageFiltersAdapter
 import com.example.cowall.data.ImageFilter
@@ -44,15 +48,24 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
     private var gpuFilteredBitmap: Bitmap? = null
     private val filteredBitmap = MutableLiveData<Bitmap>()
 
+    // Filter / intensity / tint state — composited into filteredBitmap
     private var filterIntensity: Float = 1.0f
     private var tintColor: Int = Color.TRANSPARENT
     private var tintAlpha: Float = 0.4f
+
+    // Text overlay state — shown via draggable textOverlayPreview, baked on save
     private var overlayText: String = ""
     private var overlayTextColor: Int = Color.WHITE
+    private var textHasBeenPositioned = false
+    private var textDragStartX = 0f
+    private var textDragStartY = 0f
+    private var textDragStartViewX = 0f
+    private var textDragStartViewY = 0f
 
     private var recomputeJob: Job? = null
 
-    private enum class EditTool { FILTERS, INTENSITY, TINT, TEXT }
+    private enum class EditTool { FILTERS, INTENSITY, TINT, TEXT, DRAW }
+    private var activeTool = EditTool.FILTERS
 
     companion object {
         const val KEY_FILTERED_IMAGE_URI = "filteredImage"
@@ -76,6 +89,18 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
             Color.parseColor("#74B9FF"),
             Color.parseColor("#A29BFE")
         )
+
+        private val BRUSH_COLORS = listOf(
+            Color.WHITE,
+            Color.RED,
+            Color.parseColor("#FF6B00"),  // Orange
+            Color.YELLOW,
+            Color.parseColor("#4CAF50"),  // Green
+            Color.CYAN,
+            Color.parseColor("#2196F3"),  // Blue
+            Color.parseColor("#9C27B0"),  // Purple
+            Color.BLACK
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +111,7 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
         setupIntensityPanel()
         setupTintPanel()
         setupTextPanel()
+        setupDrawPanel()
         setupObservers()
         prepareImagePreview()
         setListeners()
@@ -134,7 +160,8 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
             binding.tabFilters to EditTool.FILTERS,
             binding.tabIntensity to EditTool.INTENSITY,
             binding.tabTint to EditTool.TINT,
-            binding.tabText to EditTool.TEXT
+            binding.tabText to EditTool.TEXT,
+            binding.tabDraw to EditTool.DRAW
         ).forEach { (tab, tool) ->
             tab.setOnClickListener { switchToTool(tool) }
         }
@@ -142,10 +169,17 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
     }
 
     private fun switchToTool(tool: EditTool) {
+        // Dismiss keyboard when leaving text tool
+        if (activeTool == EditTool.TEXT && tool != EditTool.TEXT) {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(binding.editOverlayText.windowToken, 0)
+        }
+        activeTool = tool
         binding.panelFilters.visibility = View.GONE
         binding.panelIntensity.visibility = View.GONE
         binding.panelTint.visibility = View.GONE
         binding.panelText.visibility = View.GONE
+        binding.panelDraw.visibility = View.GONE
         when (tool) {
             EditTool.FILTERS -> binding.panelFilters.visibility = View.VISIBLE
             EditTool.INTENSITY -> binding.panelIntensity.visibility = View.VISIBLE
@@ -156,7 +190,9 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
                 val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.showSoftInput(binding.editOverlayText, InputMethodManager.SHOW_IMPLICIT)
             }
+            EditTool.DRAW -> binding.panelDraw.visibility = View.VISIBLE
         }
+        binding.drawingCanvas.isDrawingEnabled = (tool == EditTool.DRAW)
         updateTabHighlights(tool)
     }
 
@@ -167,7 +203,8 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
             binding.textTabFilters to EditTool.FILTERS,
             binding.textTabIntensity to EditTool.INTENSITY,
             binding.textTabTint to EditTool.TINT,
-            binding.textTabText to EditTool.TEXT
+            binding.textTabText to EditTool.TEXT,
+            binding.textTabDraw to EditTool.DRAW
         ).forEach { (label, tool) ->
             label.setTextColor(if (tool == activeTool) activeColor else inactiveColor)
         }
@@ -217,14 +254,12 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
         TEXT_COLORS.forEach { color ->
             val circle = View(this).apply {
                 val size = dpToPx(36)
-                layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                    marginEnd = dpToPx(8)
-                }
+                layoutParams = LinearLayout.LayoutParams(size, size).apply { marginEnd = dpToPx(8) }
                 background = makeSwatchBackground(color, color == overlayTextColor)
                 setOnClickListener {
                     overlayTextColor = color
+                    binding.textOverlayPreview.setTextColor(color)
                     refreshTextColorSwatches(color)
-                    recomputeDisplayBitmap()
                 }
             }
             binding.textColorRow.addView(circle)
@@ -241,19 +276,99 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
         binding.editOverlayText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 overlayText = s?.toString() ?: ""
-                recomputeDisplayBitmap()
+                if (overlayText.isNotBlank()) {
+                    binding.textOverlayPreview.text = overlayText
+                    if (!textHasBeenPositioned) positionTextOverlayAtCenter()
+                } else {
+                    binding.textOverlayPreview.visibility = View.GONE
+                    textHasBeenPositioned = false
+                }
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
+        // Drag handler for the text overlay — active only in TEXT mode
+        binding.textOverlayPreview.setOnTouchListener { view, event ->
+            if (activeTool != EditTool.TEXT) return@setOnTouchListener false
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    textDragStartX = event.rawX
+                    textDragStartY = event.rawY
+                    textDragStartViewX = view.x
+                    textDragStartViewY = view.y
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - textDragStartX
+                    val dy = event.rawY - textDragStartY
+                    val maxX = (binding.imageContainer.width - view.width).toFloat()
+                    val maxY = (binding.imageContainer.height - view.height).toFloat()
+                    view.x = (textDragStartViewX + dx).coerceIn(0f, maxX.coerceAtLeast(0f))
+                    view.y = (textDragStartViewY + dy).coerceIn(0f, maxY.coerceAtLeast(0f))
+                    true
+                }
+                MotionEvent.ACTION_UP -> true
+                else -> false
+            }
+        }
+
         refreshTextColorSwatches(overlayTextColor)
+        binding.textOverlayPreview.setTextColor(overlayTextColor)
+    }
+
+    private fun positionTextOverlayAtCenter() {
+        binding.textOverlayPreview.visibility = View.INVISIBLE
+        binding.imageContainer.post {
+            val cx = (binding.imageContainer.width - binding.textOverlayPreview.width) / 2f
+            val cy = (binding.imageContainer.height - binding.textOverlayPreview.height) / 2f
+            binding.textOverlayPreview.x = cx.coerceAtLeast(0f)
+            binding.textOverlayPreview.y = cy.coerceAtLeast(0f)
+            binding.textOverlayPreview.visibility = View.VISIBLE
+            textHasBeenPositioned = true
+        }
     }
 
     private fun refreshTextColorSwatches(selectedColor: Int) {
         for (i in 0 until binding.textColorRow.childCount) {
             binding.textColorRow.getChildAt(i)?.background =
                 makeSwatchBackground(TEXT_COLORS[i], TEXT_COLORS[i] == selectedColor)
+        }
+    }
+
+    private fun setupDrawPanel() {
+        BRUSH_COLORS.forEach { color ->
+            val circle = View(this).apply {
+                val size = dpToPx(32)
+                layoutParams = LinearLayout.LayoutParams(size, size).apply { marginEnd = dpToPx(8) }
+                background = makeSwatchBackground(color, color == Color.WHITE)
+                setOnClickListener {
+                    binding.drawingCanvas.setStrokeColor(color)
+                    refreshBrushColorSwatches(color)
+                }
+            }
+            binding.brushColorRow.addView(circle)
+        }
+
+        val density = resources.displayMetrics.density
+        binding.seekBarBrushSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                binding.drawingCanvas.setStrokeWidthPx((progress + 4) * density)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+        })
+        // Sync initial width with seekbar's starting progress
+        binding.drawingCanvas.setStrokeWidthPx((binding.seekBarBrushSize.progress + 4) * density)
+
+        binding.btnUndo.setOnClickListener { binding.drawingCanvas.undo() }
+        binding.btnClearDoodle.setOnClickListener { binding.drawingCanvas.clearAll() }
+    }
+
+    private fun refreshBrushColorSwatches(selectedColor: Int) {
+        for (i in 0 until binding.brushColorRow.childCount) {
+            binding.brushColorRow.getChildAt(i)?.background =
+                makeSwatchBackground(BRUSH_COLORS[i], BRUSH_COLORS[i] == selectedColor)
         }
     }
 
@@ -303,22 +418,18 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 
+    // Composites filter → intensity → tint. Text and doodle are separate overlays.
     private fun recomputeDisplayBitmap() {
         if (!::originalBitmap.isInitialized) return
         recomputeJob?.cancel()
         recomputeJob = lifecycleScope.launch(Dispatchers.Default) {
             val gpuFiltered = gpuFilteredBitmap ?: originalBitmap
             val blended = blendBitmaps(originalBitmap, gpuFiltered, filterIntensity)
-            val tinted = if (tintColor != Color.TRANSPARENT) applyColorTint(blended, tintColor, tintAlpha) else blended
-            val result = if (overlayText.isNotBlank()) drawTextOnBitmap(tinted, overlayText, overlayTextColor) else tinted
-            withContext(Dispatchers.Main) {
-                filteredBitmap.value = result
-            }
+            val result = if (tintColor != Color.TRANSPARENT) applyColorTint(blended, tintColor, tintAlpha) else blended
+            withContext(Dispatchers.Main) { filteredBitmap.value = result }
         }
     }
 
-    // Blends base (always originalBitmap) with overlay at the given alpha.
-    // overlay alpha=1.0 → fully filtered; alpha=0.0 → original unchanged.
     private fun blendBitmaps(base: Bitmap, overlay: Bitmap, overlayAlpha: Float): Bitmap {
         val result = base.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(result)
@@ -338,17 +449,55 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
         return result
     }
 
-    private fun drawTextOnBitmap(source: Bitmap, text: String, textColor: Int): Bitmap {
+    private fun drawTextOnBitmap(
+        source: Bitmap, text: String, textColor: Int,
+        bitmapX: Float, bitmapY: Float, textSizePx: Float
+    ): Bitmap {
         val result = source.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(result)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = textColor
-            this.textSize = result.height * 0.055f
+            this.textSize = textSizePx
             this.textAlign = Paint.Align.CENTER
             this.isFakeBoldText = true
             setShadowLayer(6f, 2f, 2f, Color.BLACK)
         }
-        canvas.drawText(text, result.width / 2f, result.height * 0.87f, paint)
+        // bitmapY is the center of the text overlay view; adjust to baseline
+        val fontMetrics = paint.fontMetrics
+        val adjustedY = bitmapY - (fontMetrics.ascent + fontMetrics.descent) / 2f
+        canvas.drawText(text, bitmapX, adjustedY, paint)
+        return result
+    }
+
+    private fun compositeStrokes(
+        bitmap: Bitmap,
+        strokes: List<DrawingCanvasView.StrokePath>,
+        imageViewMatrix: Matrix
+    ): Bitmap {
+        if (strokes.isEmpty()) return bitmap
+        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas = Canvas(result)
+
+        val inverseMatrix = Matrix()
+        imageViewMatrix.invert(inverseMatrix)
+
+        // Scale factor for stroke width: view → bitmap space
+        val matrixValues = FloatArray(9)
+        inverseMatrix.getValues(matrixValues)
+        val scale = kotlin.math.abs(matrixValues[Matrix.MSCALE_X])
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        for (stroke in strokes) {
+            paint.color = stroke.color
+            paint.strokeWidth = stroke.widthPx * scale
+            val bitmapPath = Path()
+            stroke.path.transform(inverseMatrix, bitmapPath)
+            canvas.drawPath(bitmapPath, paint)
+        }
         return result
     }
 
@@ -361,11 +510,49 @@ class EditImageActivity : AppCompatActivity(), ImageFilterListener {
 
     private fun setListeners() {
         binding.imageBack.setOnClickListener { onBackPressed() }
+
         binding.imageSave.setOnClickListener {
-            filteredBitmap.value?.let { bitmap -> viewModel.saveFilteredImage(bitmap) }
+            val currentBitmap = filteredBitmap.value ?: return@setOnClickListener
+
+            // Capture all view-dependent state on main thread before background dispatch
+            val imageMatrix = binding.imagePreview.imageMatrix
+            val inverseMatrix = Matrix()
+            val matrixValid = imageMatrix.invert(inverseMatrix)
+
+            val hasText = overlayText.isNotBlank() && binding.textOverlayPreview.visibility != View.GONE
+            val textBitmapX: Float
+            val textBitmapY: Float
+            val textSizePx: Float
+            if (hasText && matrixValid) {
+                val cx = binding.textOverlayPreview.x + binding.textOverlayPreview.width / 2f
+                val cy = binding.textOverlayPreview.y + binding.textOverlayPreview.height / 2f
+                val pts = floatArrayOf(cx, cy)
+                inverseMatrix.mapPoints(pts)
+                textBitmapX = pts[0]
+                textBitmapY = pts[1]
+                textSizePx = binding.textOverlayPreview.textSize
+            } else {
+                textBitmapX = 0f; textBitmapY = 0f; textSizePx = 0f
+            }
+
+            val strokes = binding.drawingCanvas.getStrokesSnapshot()
+
+            lifecycleScope.launch(Dispatchers.Default) {
+                var result = currentBitmap
+                if (hasText && textSizePx > 0f) {
+                    result = drawTextOnBitmap(result, overlayText, overlayTextColor, textBitmapX, textBitmapY, textSizePx)
+                }
+                if (strokes.isNotEmpty() && matrixValid) {
+                    result = compositeStrokes(result, strokes, imageMatrix)
+                }
+                withContext(Dispatchers.Main) {
+                    viewModel.saveFilteredImage(result)
+                }
+            }
         }
+
         binding.imagePreview.setOnLongClickListener {
-            binding.imagePreview.setImageBitmap(originalBitmap)
+            if (::originalBitmap.isInitialized) binding.imagePreview.setImageBitmap(originalBitmap)
             false
         }
         binding.imagePreview.setOnClickListener {

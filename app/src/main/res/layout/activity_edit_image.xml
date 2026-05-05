@@ -46,27 +46,52 @@
             app:tint="@color/white" />
     </androidx.appcompat.widget.LinearLayoutCompat>
 
-    <!-- Image preview fills space between toolbar and tool panel -->
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/imagePreview"
+    <!-- Image container: holds imagePreview + all edit overlays -->
+    <FrameLayout
+        android:id="@+id/imageContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/new_wallpaper"
-        android:visibility="visible"
+        android:clickable="false"
+        android:focusable="false"
         app:layout_constraintTop_toBottomOf="@id/topBar"
         app:layout_constraintBottom_toTopOf="@id/toolPanel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <ProgressBar
-        android:id="@+id/previewProgressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="@id/imagePreview"
-        app:layout_constraintBottom_toBottomOf="@id/imagePreview"
-        app:layout_constraintStart_toStartOf="@id/imagePreview"
-        app:layout_constraintEnd_toEndOf="@id/imagePreview" />
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/imagePreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/new_wallpaper"
+            android:visibility="visible" />
+
+        <ProgressBar
+            android:id="@+id/previewProgressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+        <!-- Drawing canvas — transparent overlay, receives touch only in DRAW mode -->
+        <com.example.cowall.DrawingCanvasView
+            android:id="@+id/drawingCanvas"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Draggable text overlay — visible when user has typed text -->
+        <TextView
+            android:id="@+id/textOverlayPreview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="@dimen/spacing_medium"
+            android:paddingVertical="@dimen/spacing_small"
+            android:background="@drawable/text_overlay_background"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
     <!-- Bottom tool panel -->
     <LinearLayout
@@ -84,7 +109,7 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <!-- Tool tab row -->
+        <!-- 5-tab tool selector row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="48dp"
@@ -178,6 +203,29 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Text"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_micro" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabDraw"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    app:srcCompat="@drawable/ic_brush"
+                    app:tint="@color/text_secondary" />
+                <TextView
+                    android:id="@+id/textTabDraw"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Draw"
                     android:textColor="@color/text_secondary"
                     android:textSize="@dimen/text_micro" />
             </LinearLayout>
@@ -306,7 +354,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:hint="Add your caption..."
+                android:hint="Type your caption — drag it on the image"
                 android:textColorHint="@color/text_hint"
                 android:textColor="@color/text_primary"
                 android:inputType="text"
@@ -330,6 +378,80 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical" />
             </HorizontalScrollView>
+        </LinearLayout>
+
+        <!-- Draw / doodle panel -->
+        <LinearLayout
+            android:id="@+id/panelDraw"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_small"
+            android:paddingTop="@dimen/spacing_small"
+            android:paddingBottom="@dimen/spacing_small"
+            android:visibility="gone">
+
+            <!-- Brush color swatches -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/brushColorRow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+            </HorizontalScrollView>
+
+            <!-- Brush size + undo + clear -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="44dp"
+                    android:layout_height="wrap_content"
+                    android:text="Size"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_small" />
+
+                <SeekBar
+                    android:id="@+id/seekBarBrushSize"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="40"
+                    android:progress="8"
+                    android:progressTint="@color/accent"
+                    android:thumbTint="@color/accent" />
+
+                <ImageButton
+                    android:id="@+id/btnUndo"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="@dimen/spacing_small"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Undo"
+                    app:srcCompat="@drawable/ic_undo"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnClearDoodle"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="@dimen/spacing_micro"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Clear all"
+                    app:srcCompat="@drawable/ic_close"
+                    app:tint="@color/text_primary" />
+            </LinearLayout>
+
         </LinearLayout>
 
     </LinearLayout>
