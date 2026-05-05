@@ -543,12 +543,29 @@
                     android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="\u203A"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="20sp" />
+                <FrameLayout
+                    android:layout_width="24dp"
+                    android:layout_height="24dp">
+
+                    <TextView
+                        android:id="@+id/deleteOldImagesChevron"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="\u203A"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="20sp" />
+
+                    <ProgressBar
+                        android:id="@+id/deleteOldImagesProgress"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:indeterminateTint="@color/accent"
+                        android:visibility="gone" />
+
+                </FrameLayout>
             </LinearLayout>
 
             <View

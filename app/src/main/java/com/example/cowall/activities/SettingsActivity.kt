@@ -523,18 +523,32 @@ class SettingsActivity : AppCompatActivity() {
             90 * 86_400_000L,
             365 * 86_400_000L
         )
+        var selectedIndex = -1
         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle("Delete Drive Images")
-            .setItems(labels) { _, which ->
-                deleteOldDriveImages(ageMillis[which], labels[which])
+            .setSingleChoiceItems(labels, selectedIndex) { _, which -> selectedIndex = which }
+            .setPositiveButton("Delete") { _, _ ->
+                if (selectedIndex < 0) return@setPositiveButton
+                showEmotionalConfirmDialog(
+                    emoji = "\uD83D\uDDD1\uFE0F",
+                    title = "Delete Images?",
+                    message = "Permanently delete all CoWall images ${labels[selectedIndex].lowercase()} from your Drive. This cannot be undone.",
+                    positiveLabel = "Delete",
+                    onConfirm = { deleteOldDriveImages(ageMillis[selectedIndex], labels[selectedIndex]) }
+                )
             }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
     private fun deleteOldDriveImages(ageMs: Long, label: String) {
+        setDeleteRowLoading(true)
         lifecycleScope.launch {
             try {
-                val account = GoogleSignIn.getLastSignedInAccount(this@SettingsActivity) ?: return@launch
+                val account = GoogleSignIn.getLastSignedInAccount(this@SettingsActivity) ?: run {
+                    setDeleteRowLoading(false)
+                    return@launch
+                }
                 val token = withContext(Dispatchers.IO) {
                     GoogleAuthUtil.getToken(
                         this@SettingsActivity,
@@ -552,8 +566,17 @@ class SettingsActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("CoWall", "deleteOldDriveImages error: $e")
                 showErrorSnackbar("Failed to delete images")
+            } finally {
+                setDeleteRowLoading(false)
             }
         }
+    }
+
+    private fun setDeleteRowLoading(isLoading: Boolean) {
+        binding.deleteOldImagesRow.isEnabled = !isLoading
+        binding.deleteOldImagesRow.alpha = if (isLoading) 0.5f else 1f
+        binding.deleteOldImagesChevron.visibility = if (isLoading) View.GONE else View.VISIBLE
+        binding.deleteOldImagesProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
     private fun formatBytes(bytes: Long): String = when {
