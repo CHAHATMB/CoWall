@@ -4,4 +4,18 @@
     <string name="widget_image_description">Shared wallpaper from CoWall</string>
     <string name="widget_empty_no_image">No moments yet</string>
     <string name="widget_empty_cleared">Cleared with love</string>
+
+    <!-- Share / invite strings -->
+    <string name="share_greeting_named">Hey! %1$s wants to connect on CoWall.</string>
+    <string name="share_greeting_anonymous">Hey! I want to connect with you on CoWall.</string>
+    <string name="share_body">CoWall lets us send photos that automatically become each other\'s wallpaper.\n\nAlready have CoWall? Tap to join: %1$s\n\nDon\'t have it yet? Install here: %2$s\nThen enter code: %3$s</string>
+    <string name="share_chooser_title">Invite your partner</string>
+
+    <!-- Waiting screen -->
+    <string name="waiting_just_started">Just started waiting…</string>
+    <string name="waiting_steps_hint">Partner\'s quick guide: Install CoWall  ·  Open app → Join Space  ·  Scan QR or enter code</string>
+    <plurals name="waiting_elapsed">
+        <item quantity="one">Waiting for 1 minute…</item>
+        <item quantity="other">Waiting for %d minutes…</item>
+    </plurals>
 </resources>

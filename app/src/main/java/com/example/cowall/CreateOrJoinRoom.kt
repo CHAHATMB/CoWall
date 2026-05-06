@@ -4,12 +4,24 @@ import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.view.animation.AnimationUtils
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import androidx.lifecycle.lifecycleScope
+import com.example.cowall.utilities.Coroutines
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.cowall.activities.ChatRoomActivity
 import com.example.cowall.data.AppDatabase
 import com.example.cowall.data.RoomJoinRecord
@@ -37,6 +49,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
     private lateinit var roomRef: DatabaseReference
     private var partnerListener: ValueEventListener? = null
     private var pulseAnimator: ObjectAnimator? = null
+    private var waitingTimerJob: Job? = null
 
     companion object {
         private const val LOG_TAG = "CoWall"
@@ -44,6 +57,10 @@ class CreateOrJoinRoom : AppCompatActivity() {
         private const val PREF_USERNAME = "userName"
         private const val PREF_JOINED_ROOM = "joinedRoomId"
         private const val PREF_PARTNER_NAME = "partnerName"
+        private const val PREF_PENDING_INVITE = "pendingInviteCode"
+        private const val PREF_WAITING_START_TIME = "waitingStartTime"
+        private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.example.cowall"
+        private const val TIMER_TICK_MS = 30_000L
         const val EXTRA_GOOGLE_NAME = "extra_google_name"
     }
 
@@ -73,6 +90,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
             partnerListener?.let { roomRef.removeEventListener(it) }
         }
         stopPulseAnimation()
+        stopWaitingTimer()
     }
 
     private fun watchEditText() {
@@ -104,7 +122,10 @@ class CreateOrJoinRoom : AppCompatActivity() {
 
         val partnerCode = binding.editRoomId.text.toString().trim().replace("-", "")
         if (partnerCode.isEmpty()) {
-            sharedPref.edit().putString(PREF_WAITING_STATE, "true").apply()
+            sharedPref.edit()
+                .putString(PREF_WAITING_STATE, "true")
+                .putLong(PREF_WAITING_START_TIME, System.currentTimeMillis())
+                .apply()
             showWaiting(true)
             showSuccessSnackbar("Space created! Share your code with your partner")
             lookForPartner()
@@ -135,7 +156,10 @@ class CreateOrJoinRoom : AppCompatActivity() {
             partnerListener?.let { roomRef.removeEventListener(it) }
         }
         partnerListener = null
-        sharedPref.edit().putString(PREF_WAITING_STATE, "false").apply()
+        sharedPref.edit()
+            .putString(PREF_WAITING_STATE, "false")
+            .remove(PREF_WAITING_START_TIME)
+            .apply()
         showWaiting(false)
     }
 
@@ -169,12 +193,15 @@ class CreateOrJoinRoom : AppCompatActivity() {
             binding.waitingRoomCS.show()
             binding.waitingRoomCS.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
             startPulseAnimation()
+            startWaitingTimer()
+            displayQrCode()
         } else {
             binding.waitingRoomCS.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_out))
             binding.waitingRoomCS.hide()
             binding.createRoomCL.show()
             binding.createRoomCL.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
             stopPulseAnimation()
+            stopWaitingTimer()
         }
     }
 
@@ -193,13 +220,65 @@ class CreateOrJoinRoom : AppCompatActivity() {
         binding.yourRoomIdCS.alpha = 1f
     }
 
+    private fun startWaitingTimer() {
+        val startTime = sharedPref.getLong(PREF_WAITING_START_TIME, System.currentTimeMillis())
+        waitingTimerJob = lifecycleScope.launch {
+            while (true) {
+                val minutes = (System.currentTimeMillis() - startTime) / 60_000
+                binding.waitingTimerText.text = if (minutes < 1) {
+                    getString(R.string.waiting_just_started)
+                } else {
+                    resources.getQuantityString(R.plurals.waiting_elapsed, minutes.toInt(), minutes.toInt())
+                }
+                delay(TIMER_TICK_MS)
+            }
+        }
+    }
+
+    private fun stopWaitingTimer() {
+        waitingTimerJob?.cancel()
+        waitingTimerJob = null
+    }
+
+    private fun displayQrCode() {
+        if (!::roomId.isInitialized) return
+        val content = "cowall://join?code=$roomId"
+        Coroutines.io {
+            val bitmap = generateQrBitmap(content, sizePx = 500)
+            withContext(Dispatchers.Main) {
+                binding.qrCodeImage.setImageBitmap(bitmap)
+            }
+        }
+    }
+
+    private fun generateQrBitmap(content: String, sizePx: Int): Bitmap {
+        val hints = mapOf(EncodeHintType.MARGIN to 1)
+        val matrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx, hints)
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val darkColor = Color.parseColor("#2D004D")
+        for (x in 0 until sizePx) {
+            for (y in 0 until sizePx) {
+                bitmap.setPixel(x, y, if (matrix[x, y]) darkColor else Color.WHITE)
+            }
+        }
+        return bitmap
+    }
+
     private fun shareSpaceCode() {
         if (!::roomId.isInitialized) return
+        val myName = sharedPref.getString(PREF_USERNAME, null)
+        val deepLink = "cowall://join?code=$roomId"
+        val greeting = if (myName != null) {
+            getString(R.string.share_greeting_named, myName)
+        } else {
+            getString(R.string.share_greeting_anonymous)
+        }
+        val body = getString(R.string.share_body, deepLink, PLAY_STORE_URL, formatSpaceCode(roomId))
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "Join my CoWall space! Open CoWall and enter code: ${formatSpaceCode(roomId)}")
+            putExtra(Intent.EXTRA_TEXT, "$greeting\n\n$body")
         }
-        startActivity(Intent.createChooser(shareIntent, "Share Space Code"))
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_chooser_title)))
     }
 
     private fun lookForPartner() {
@@ -382,6 +461,23 @@ class CreateOrJoinRoom : AppCompatActivity() {
         binding.yourRoomId.setOnClickListener { copyToClipboard("Space Code", roomId) }
         binding.yourRoomIdCS.setOnClickListener { copyToClipboard("Space Code", roomId) }
         restoreUiState()
+        applyPendingInviteCode()
+    }
+
+    /**
+     * If the user arrived via a cowall://join?code=XXXX deep link, SplashScreenActivity
+     * saves the code to SharedPrefs. Pick it up here and pre-fill the join field.
+     * Only applies when not already in the waiting state.
+     */
+    private fun applyPendingInviteCode() {
+        val isWaiting = sharedPref.getString(PREF_WAITING_STATE, "false") == "true"
+        if (isWaiting) return
+        val code = sharedPref.getString(PREF_PENDING_INVITE, null) ?: return
+        sharedPref.edit().remove(PREF_PENDING_INVITE).apply()
+        val cleaned = code.replace("-", "")
+        binding.editRoomId.setText(
+            if (cleaned.length == 8) formatSpaceCode(cleaned) else code
+        )
     }
 
     /** Persists email→userId and email→roomId in Firebase for cross-device/sign-out recovery. */

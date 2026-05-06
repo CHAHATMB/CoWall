@@ -239,18 +239,46 @@
             android:layout_marginEnd="@dimen/spacing_xlarge"
             android:layout_marginTop="10dp"
             android:gravity="center"
-            android:text="Ask your partner to open CoWall and enter this code"
+            android:text="Ask your partner to scan the QR code or enter the code below"
             android:textColor="#FFD6F5"
             android:textSize="15sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/titleTextCS" />
 
+        <!-- Elapsed waiting time -->
+        <TextView
+            android:id="@+id/waitingTimerText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="0.7"
+            android:text="@string/waiting_just_started"
+            android:textColor="#FFD6F5"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/waitingInstructionText" />
+
+        <!-- QR code for partner to scan -->
+        <ImageView
+            android:id="@+id/qrCodeImage"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_marginTop="12dp"
+            android:padding="10dp"
+            android:background="@drawable/qr_white_card"
+            android:contentDescription="QR code to join this space"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/waitingTimerText" />
+
         <!-- "YOUR SPACE CODE" label above the big code -->
         <TextView
             android:id="@+id/codeLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:letterSpacing="0.12"
             android:text="YOUR SPACE CODE"
             android:textAllCaps="true"
@@ -260,7 +288,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintVertical_chainStyle="packed"
-            app:layout_constraintTop_toBottomOf="@id/waitingInstructionText"
+            app:layout_constraintTop_toBottomOf="@id/qrCodeImage"
             app:layout_constraintVertical_bias="0.5" />
 
         <!-- Big pulsing code -->
@@ -298,21 +326,39 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/yourRoomIdCS" />
 
-        <!-- Share button -->
+        <!-- Remind / share button -->
         <Button
             android:id="@+id/shareButtonCS"
-            android:layout_width="200dp"
+            android:layout_width="220dp"
             android:layout_height="52dp"
             android:layout_marginTop="28dp"
             android:background="@drawable/button_white_pill"
-            android:text="Share Code"
+            android:text="Remind your partner"
             android:textColor="#D600A7"
             android:textSize="@dimen/text_large"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/stepsCard"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tapToCopyHintCS"
             app:layout_constraintVertical_bias="0.3" />
+
+        <!-- Partner quick-guide hint -->
+        <TextView
+            android:id="@+id/stepsCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="28dp"
+            android:background="@drawable/hint_card_bg"
+            android:gravity="center"
+            android:padding="12dp"
+            android:text="@string/waiting_steps_hint"
+            android:textColor="#FFD6F5"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

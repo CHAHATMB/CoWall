@@ -23,6 +23,7 @@ class SplashScreenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash_screen)
 
+        extractDeepLinkCode()
         playEntryAnimations()
 
         Handler(Looper.getMainLooper()).postDelayed({
@@ -60,6 +61,15 @@ class SplashScreenActivity : AppCompatActivity() {
             .setStartDelay(500)
             .setInterpolator(DecelerateInterpolator())
             .start()
+    }
+
+    private fun extractDeepLinkCode() {
+        val code = intent?.data
+            ?.takeIf { it.scheme == "cowall" && it.host == "join" }
+            ?.getQueryParameter("code")
+            ?: return
+        getSharedPreferences("cowall", Context.MODE_PRIVATE)
+            .edit().putString("pendingInviteCode", code).apply()
     }
 
     private fun navigateToNextScreen() {

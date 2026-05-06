@@ -116,6 +116,9 @@ dependencies {
     // ViewPager2 (onboarding)
     implementation 'androidx.viewpager2:viewpager2:1.1.0'
 
+    // QR code generation
+    implementation 'com.google.zxing:core:3.5.3'
+
     // Emoji support
     implementation 'androidx.emoji2:emoji2-bundled:1.6.0'
 
