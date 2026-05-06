@@ -261,10 +261,13 @@ class ChatRoomActivity : AppCompatActivity(),
     }
 
     private fun setupSwipeToReply() {
-        val swipeCallback = SwipeToReplyCallback(messages) { message, _ ->
-            setReplyingTo(message)
-            adapter.notifyDataSetChanged()
-        }
+        val swipeCallback = SwipeToReplyCallback(
+            getMessageAt = { position -> adapter.getMessageAtDisplayPosition(position) },
+            onSwipeReply = { message, _ ->
+                setReplyingTo(message)
+                adapter.notifyDataSetChanged()
+            }
+        )
         ItemTouchHelper(swipeCallback).attachToRecyclerView(binding.chatRoomRecyclerView)
     }
 
@@ -367,6 +370,11 @@ class ChatRoomActivity : AppCompatActivity(),
                 binding.partnerUserNameText.text = name ?: "Partner"
             }
         }
+        fbc.getPartnerAvatarUrl { url ->
+            if (!url.isNullOrEmpty()) {
+                runOnUiThread { adapter.notifyDataSetChanged() }
+            }
+        }
     }
 
     // ─── MessageUpdateCallback ─────────────────────────────────────
@@ -414,10 +422,10 @@ class ChatRoomActivity : AppCompatActivity(),
             if (messages.isEmpty() && adapter.getDisplayItemCount() == 0) {
                 // Cache was empty — no local history, sync from Firebase
                 fbc.getAllMessageData()
-                return@runOnUiThread
+            } else {
+                adapter.addAllMessages(messages)
+                scrollToBottom()
             }
-            adapter.addAllMessages(messages)
-            scrollToBottom()
             updateEmptyState()
         }
     }

@@ -12,6 +12,7 @@ import com.example.cowall.databinding.ActivityEditProfileBinding
 import com.example.cowall.utilities.showSuccessSnackbar
 import com.example.cowall.utilities.showErrorSnackbar
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.storage.FirebaseStorage
 
 class EditProfileActivity : AppCompatActivity() {
 
@@ -80,23 +81,36 @@ class EditProfileActivity : AppCompatActivity() {
             .putString("statusText", status)
             .apply()
 
-        // Update Firebase
-        try {
-            val userId = FireBaseConnector.userUniqueId
-            val database = FirebaseDatabase.getInstance()
-            database.getReference("userName/$userId").setValue(name)
-            database.getReference("userProfiles/$userId/statusText").setValue(status)
-            database.getReference("userProfiles/$userId/displayName").setValue(name)
+        val userId = FireBaseConnector.userUniqueId
+        val database = FirebaseDatabase.getInstance()
+        database.getReference("userName/$userId").setValue(name)
+        database.getReference("userProfiles/$userId/statusText").setValue(status)
+        database.getReference("userProfiles/$userId/displayName").setValue(name)
 
-            if (selectedAvatarUri != null) {
-                sharedPref.edit().putString("avatarUrl", selectedAvatarUri.toString()).apply()
-                database.getReference("userProfiles/$userId/avatarUrl").setValue(selectedAvatarUri.toString())
-            }
-        } catch (e: Exception) {
-            // Non-critical — local save already succeeded
+        val avatarUri = selectedAvatarUri
+        if (avatarUri != null) {
+            val storageRef = FirebaseStorage.getInstance()
+                .getReference("avatars/$userId/profile.jpg")
+            storageRef.putFile(avatarUri)
+                .continueWithTask { task ->
+                    if (!task.isSuccessful) throw task.exception!!
+                    storageRef.downloadUrl
+                }
+                .addOnSuccessListener { downloadUrl ->
+                    val url = downloadUrl.toString()
+                    sharedPref.edit().putString("avatarUrl", url).apply()
+                    database.getReference("userProfiles/$userId/avatarUrl").setValue(url)
+                    showSuccessSnackbar("Profile updated!")
+                    binding.saveButton.postDelayed({ finish() }, 800)
+                }
+                .addOnFailureListener {
+                    binding.saveButton.isEnabled = true
+                    binding.saveButton.text = "Save"
+                    showErrorSnackbar("Failed to upload photo")
+                }
+        } else {
+            showSuccessSnackbar("Profile updated!")
+            binding.saveButton.postDelayed({ finish() }, 800)
         }
-
-        showSuccessSnackbar("Profile updated!")
-        binding.saveButton.postDelayed({ finish() }, 800)
     }
 }

@@ -102,6 +102,7 @@ class MessageAdapter(
         val replyPreviewContainer: LinearLayout = itemView.findViewById(R.id.replyPreviewContainer)
         val replyPreviewText: TextView = itemView.findViewById(R.id.replyPreviewText)
         val bubbleContainer: LinearLayout = itemView.findViewById(R.id.bubbleContainer)
+        val partnerAvatar: ImageView = itemView.findViewById(R.id.partnerAvatarImage)
     }
 
     inner class DateHeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -186,6 +187,13 @@ class MessageAdapter(
                 holder.timestamp.text = timeStr
                 val partnerName = FireBaseConnector.partnerUserName
                 holder.senderName.text = partnerName
+                val avatarUrl = FireBaseConnector.partnerAvatarUrl
+                if (avatarUrl.isNotEmpty()) {
+                    holder.partnerAvatar.visibility = View.VISIBLE
+                    Glide.with(context).load(avatarUrl).circleCrop().into(holder.partnerAvatar)
+                } else {
+                    holder.partnerAvatar.visibility = View.GONE
+                }
                 bindReplyPreview(msg, holder.replyPreviewContainer, holder.replyPreviewText)
                 bindReactions(msg, holder.reactionsText)
 
@@ -330,6 +338,9 @@ class MessageAdapter(
     }
 
     fun getDisplayItemCount(): Int = displayItems.size
+
+    fun getMessageAtDisplayPosition(position: Int): MessageModel? =
+        displayItems.getOrNull(position)?.message
 
     fun updateImageUploadStatus(timestamp: Long, status: MessageStatus) {
         val index = messageList.indexOfFirst {

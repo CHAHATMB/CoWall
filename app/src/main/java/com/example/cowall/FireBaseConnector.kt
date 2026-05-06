@@ -52,6 +52,7 @@ class FireBaseConnector : ChatConnector {
         lateinit var roomId: String
         var partnerUserName: String = ""
         var partnerEmail: String = ""
+        var partnerAvatarUrl: String = ""
 
         fun setUniqueIds(userId: String, room: String) {
             userUniqueId = userId
@@ -207,6 +208,7 @@ class FireBaseConnector : ChatConnector {
 
                 if (localFile.exists()) {
                     dispatchMessage(localFile, senderId, messageKey, replyToKey, replyPreview, remoteUri = url, timestamp = timestamp)
+                    if (setAsWallpaper) setWallpaper(localFile.absolutePath)
                     return@launch
                 }
 
@@ -663,6 +665,36 @@ class FireBaseConnector : ChatConnector {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(LOG_TAG, "getPartnerUserName cancelled: $error")
+                callback(null)
+            }
+        }
+        participantsRef.addValueEventListener(listener)
+    }
+
+    override fun getPartnerAvatarUrl(callback: (String?) -> Unit) {
+        val participantsRef = database.getReference("chatRooms/$roomId/participants")
+        var listener: ValueEventListener? = null
+        listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (child in snapshot.children) {
+                    val partnerId = child.key ?: continue
+                    if (partnerId == userUniqueId) continue
+                    participantsRef.removeEventListener(listener!!)
+                    database.reference.child("userProfiles").child(partnerId).child("avatarUrl")
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(snap: DataSnapshot) {
+                                val url = snap.getValue(String::class.java)
+                                if (!url.isNullOrEmpty()) partnerAvatarUrl = url
+                                callback(url)
+                            }
+                            override fun onCancelled(error: DatabaseError) {
+                                callback(null)
+                            }
+                        })
+                    return
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
                 callback(null)
             }
         }

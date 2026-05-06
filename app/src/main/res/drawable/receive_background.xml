@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Tail triangle on the left -->
+    <!-- Tail: 12×12dp rotated square; left half visible as a left-pointing triangle -->
     <item
-        android:left="-6dp"
-        android:top="@dimen/spacing_small"
         android:width="12dp"
         android:height="12dp"
         android:gravity="start|top">
@@ -16,12 +14,12 @@
             </shape>
         </rotate>
     </item>
-    <!-- Main bubble body -->
-    <item android:left="@dimen/spacing_micro">
+    <!-- Main bubble body, inset 6dp from start so tail triangle is exposed -->
+    <item android:left="6dp">
         <shape android:shape="rectangle">
             <solid android:color="@color/bubble_received" />
             <corners
-                android:topLeftRadius="@dimen/spacing_micro"
+                android:topLeftRadius="0dp"
                 android:topRightRadius="@dimen/radius_medium"
                 android:bottomLeftRadius="@dimen/radius_medium"
                 android:bottomRightRadius="@dimen/radius_medium" />

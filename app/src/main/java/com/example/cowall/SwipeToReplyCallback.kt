@@ -11,7 +11,7 @@ import kotlin.math.abs
 import kotlin.math.min
 
 class SwipeToReplyCallback(
-    private val messageList: ArrayList<MessageModel>,
+    private val getMessageAt: (Int) -> MessageModel?,
     private val onSwipeReply: (MessageModel, Int) -> Unit
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
@@ -24,11 +24,16 @@ class SwipeToReplyCallback(
         target: RecyclerView.ViewHolder
     ): Boolean = false
 
+    override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
+        // Date headers are not swipeable
+        return if (getMessageAt(viewHolder.bindingAdapterPosition) == null) 0
+        else super.getSwipeDirs(recyclerView, viewHolder)
+    }
+
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
         val position = viewHolder.bindingAdapterPosition
-        if (position in messageList.indices) {
-            onSwipeReply(messageList[position], position)
-        }
+        val message = getMessageAt(position) ?: return
+        onSwipeReply(message, position)
     }
 
     override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float = 0.3f
