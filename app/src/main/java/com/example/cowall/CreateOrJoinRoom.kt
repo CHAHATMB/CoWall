@@ -6,17 +6,20 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
+import android.view.View
 import android.view.animation.AnimationUtils
+import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.cowall.utilities.Coroutines
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -50,6 +53,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
     private var partnerListener: ValueEventListener? = null
     private var pulseAnimator: ObjectAnimator? = null
     private var waitingTimerJob: Job? = null
+    private lateinit var scanLauncher: ActivityResultLauncher<ScanOptions>
 
     companion object {
         private const val LOG_TAG = "CoWall"
@@ -69,6 +73,10 @@ class CreateOrJoinRoom : AppCompatActivity() {
         binding = ActivityCreateOrJoinRoomBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        scanLauncher = registerForActivityResult(ScanContract()) { result ->
+            result.contents?.let { applyCodeFromScan(it) }
+        }
+
         firebaseconn.initializeConnection(applicationContext)
         sharedPref = getSharedPreferences("cowall", Context.MODE_PRIVATE)
         userUniqueId = getOrGenerateId("userUniqueId")
@@ -77,7 +85,8 @@ class CreateOrJoinRoom : AppCompatActivity() {
         binding.exitButtonCS.setOnClickListener { onExitPressed() }
         binding.shareButtonCS.setOnClickListener { shareSpaceCode() }
 
-        watchEditText()
+        setupModeToggle()
+        setupQrScanner()
         prefillGoogleNameIfNeeded()
         // Try to restore session from Firebase before generating a new room.
         // If the user signed out but their room is still active, this navigates them back.
@@ -93,14 +102,47 @@ class CreateOrJoinRoom : AppCompatActivity() {
         stopWaitingTimer()
     }
 
-    private fun watchEditText() {
-        binding.editRoomId.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                binding.submitButton.text = if (s?.trim().isNullOrEmpty()) "Create Space" else "Join Space"
+    private fun setupModeToggle() {
+        binding.modeToggle.check(R.id.btnCreateMode)
+        binding.modeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            when (checkedId) {
+                R.id.btnCreateMode -> {
+                    binding.joinSection.visibility = View.GONE
+                    binding.submitButton.text = getString(R.string.create_space)
+                }
+                R.id.btnJoinMode -> {
+                    binding.joinSection.visibility = View.VISIBLE
+                    binding.submitButton.text = getString(R.string.join_space)
+                }
             }
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        }
+    }
+
+    private fun setupQrScanner() {
+        binding.scanQrButton.setOnClickListener {
+            scanLauncher.launch(
+                ScanOptions().apply {
+                    setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    setPrompt("Scan your partner's QR code")
+                    setBeepEnabled(false)
+                    setBarcodeImageEnabled(false)
+                }
+            )
+        }
+    }
+
+    private fun applyCodeFromScan(raw: String) {
+        val code = if (raw.startsWith("cowall://")) {
+            Uri.parse(raw).getQueryParameter("code") ?: raw
+        } else {
+            raw
+        }
+        val cleaned = code.replace("-", "")
+        binding.editRoomId.setText(
+            if (cleaned.length == 8) formatSpaceCode(cleaned) else code
+        )
+        binding.modeToggle.check(R.id.btnJoinMode)
     }
 
     private fun onSubmitPressed() {
@@ -120,8 +162,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
         }
         sharedPref.edit().putString(PREF_USERNAME, userName).apply()
 
-        val partnerCode = binding.editRoomId.text.toString().trim().replace("-", "")
-        if (partnerCode.isEmpty()) {
+        if (binding.modeToggle.checkedButtonId != R.id.btnJoinMode) {
             sharedPref.edit()
                 .putString(PREF_WAITING_STATE, "true")
                 .putLong(PREF_WAITING_START_TIME, System.currentTimeMillis())
@@ -130,6 +171,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
             showSuccessSnackbar("Space created! Share your code with your partner")
             lookForPartner()
         } else {
+            val partnerCode = binding.editRoomId.text.toString().trim().replace("-", "")
             if (partnerCode.length != 8 || !partnerCode.all { it.isDigit() }) {
                 binding.editRoomId.error = "Enter a valid space code (e.g. 1234-5678)"
                 binding.editRoomId.requestFocus()
@@ -455,10 +497,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
     private fun initRoom() {
         roomId = getOrGenerateId("roomId")
         roomRef = FirebaseDatabase.getInstance().getReference("chatRooms/$roomId/participants")
-        val formattedCode = formatSpaceCode(roomId)
-        binding.yourRoomId.text = "your space: $formattedCode"
-        binding.yourRoomIdCS.text = formattedCode
-        binding.yourRoomId.setOnClickListener { copyToClipboard("Space Code", roomId) }
+        binding.yourRoomIdCS.text = formatSpaceCode(roomId)
         binding.yourRoomIdCS.setOnClickListener { copyToClipboard("Space Code", roomId) }
         restoreUiState()
         applyPendingInviteCode()
@@ -478,6 +517,7 @@ class CreateOrJoinRoom : AppCompatActivity() {
         binding.editRoomId.setText(
             if (cleaned.length == 8) formatSpaceCode(cleaned) else code
         )
+        binding.modeToggle.check(R.id.btnJoinMode)
     }
 
     /** Persists email→userId and email→roomId in Firebase for cross-device/sign-out recovery. */

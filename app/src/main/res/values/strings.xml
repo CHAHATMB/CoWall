@@ -5,6 +5,10 @@
     <string name="widget_empty_no_image">No moments yet</string>
     <string name="widget_empty_cleared">Cleared with love</string>
 
+    <!-- Create / join screen -->
+    <string name="create_space">Create Space</string>
+    <string name="join_space">Join Space</string>
+
     <!-- Share / invite strings -->
     <string name="share_greeting_named">Hey! %1$s wants to connect on CoWall.</string>
     <string name="share_greeting_anonymous">Hey! I want to connect with you on CoWall.</string>
