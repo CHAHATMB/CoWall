@@ -61,6 +61,10 @@ class SettingsActivity : AppCompatActivity() {
 
         const val PREF_UPDATES_PAUSED = "updatesPaused"
         const val PREF_SECURE_SHARE = "secureImageShare"
+
+        const val PREF_LAST_PHOTO_SENT_TIMESTAMP = "last_photo_sent_timestamp"
+        const val PREF_LAST_NOTIFICATION_SENT_TIMESTAMP = "last_notification_sent_timestamp"
+        const val PREF_PARTNER_NAME = "partnerName"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

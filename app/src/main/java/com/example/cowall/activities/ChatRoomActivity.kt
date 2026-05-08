@@ -365,7 +365,7 @@ class ChatRoomActivity : AppCompatActivity(),
     }
 
     private fun fetchPartnerName() {
-        fbc.getPatnerUserName { name ->
+        fbc.getPartnerUserName { name ->
             runOnUiThread {
                 binding.partnerUserNameText.text = name ?: "Partner"
             }

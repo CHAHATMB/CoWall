@@ -19,6 +19,7 @@ class MockChatConnector : ChatConnector {
         private const val LOG_TAG = "MockChatConnector"
         private const val MOCK_PARTNER_ID = "mock_partner_99999999"
         private const val MOCK_PARTNER_NAME = "Mock Partner"
+        private const val MOCK_PARTNER_AVATAR_URL = "https://example.com/mock_avatar.png"
         private const val SIMULATED_DELAY_MS = 800L
         private const val UPLOAD_DELAY_MS = 1500L
         private const val PARTNER_REPLY_DELAY_MS = 3000L
@@ -132,10 +133,17 @@ class MockChatConnector : ChatConnector {
         Log.d(LOG_TAG, "Mock clearMessageCache (no-op)")
     }
 
-    override fun getPatnerUserName(callback: (String?) -> Unit) {
+    override fun getPartnerUserName(callback: (String?) -> Unit) {
         handler.postDelayed({
             FireBaseConnector.partnerUserName = MOCK_PARTNER_NAME
             callback(MOCK_PARTNER_NAME)
+        }, SIMULATED_DELAY_MS / 2)
+    }
+
+    override fun getPartnerAvatarUrl(callback: (String?) -> Unit) {
+        handler.postDelayed({
+            FireBaseConnector.partnerAvatarUrl = MOCK_PARTNER_AVATAR_URL
+            callback(MOCK_PARTNER_AVATAR_URL)
         }, SIMULATED_DELAY_MS / 2)
     }
 

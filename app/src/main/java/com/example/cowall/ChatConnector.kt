@@ -29,7 +29,7 @@ interface ChatConnector {
     fun getAllMessageData()
     fun loadCachedMessages()
     fun clearMessageCache()
-    fun getPatnerUserName(callback: (String?) -> Unit)
+    fun getPartnerUserName(callback: (String?) -> Unit)
     fun getPartnerAvatarUrl(callback: (String?) -> Unit)
 
     fun sendMessage(childPath: String, msg: String)

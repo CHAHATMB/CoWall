@@ -3,12 +3,17 @@ package com.example.cowall.utilities
 import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.cowall.InactivityWorker
 import com.example.cowall.dependencyinjection.dataModule
 import com.example.cowall.dependencyinjection.firebaseModule
 import com.example.cowall.dependencyinjection.repositoryModule
 import com.example.cowall.dependencyinjection.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
+import java.util.concurrent.TimeUnit
 
 @Suppress("unused")
 class AppConfig : Application() {
@@ -21,6 +26,19 @@ class AppConfig : Application() {
         }
 
         applyTheme()
+        scheduleInactivityReminder()
+    }
+
+    private fun scheduleInactivityReminder() {
+        val inactivityRequest = PeriodicWorkRequestBuilder<InactivityWorker>(
+            6, TimeUnit.HOURS
+        ).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "InactivityReminder",
+            ExistingPeriodicWorkPolicy.KEEP,
+            inactivityRequest
+        )
     }
 
     private fun applyTheme() {

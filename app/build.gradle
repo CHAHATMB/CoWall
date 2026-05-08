@@ -123,4 +123,7 @@ dependencies {
     // Emoji support
     implementation 'androidx.emoji2:emoji2-bundled:1.6.0'
 
+    // WorkManager - background tasks
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
+
 }

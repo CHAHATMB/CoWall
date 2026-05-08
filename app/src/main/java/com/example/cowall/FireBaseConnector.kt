@@ -10,6 +10,8 @@ import com.example.cowall.data.MessageModel
 import com.example.cowall.data.MessageStatus
 import com.example.cowall.data.User
 import com.example.cowall.data.UserChat
+import com.example.cowall.data.MessageStatus
+import com.example.cowall.activities.SettingsActivity
 import com.example.cowall.utilities.printLog
 import com.google.android.gms.auth.GoogleAuthUtil
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -341,6 +343,12 @@ class FireBaseConnector : ChatConnector {
         val timestamp = System.currentTimeMillis()
         val json = Gson().toJson(UserChat(userUniqueId, uri, timestamp, type = "image", replyToKey = replyToKey, replyPreview = replyPreview))
         ref.setValue(json)
+
+        // Track last photo sent timestamp for inactivity reminder
+        context.getSharedPreferences("cowall", Context.MODE_PRIVATE).edit()
+            .putLong(SettingsActivity.PREF_LAST_PHOTO_SENT_TIMESTAMP, timestamp)
+            .apply()
+
         if (key.isNotEmpty() && localFilePath != null) {
             CoroutineScope(Dispatchers.IO).launch {
                 localCache.append(roomId, CachedMessage(
@@ -548,6 +556,13 @@ class FireBaseConnector : ChatConnector {
                                 messageUpdateCallback?.onMessageUpdated(msg)
                             }
                             else -> {
+                                if (userChat.userUniqueId == userUniqueId) {
+                                    val sharedPref = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
+                                    val currentLast = sharedPref.getLong(SettingsActivity.PREF_LAST_PHOTO_SENT_TIMESTAMP, 0L)
+                                    if (userChat.timestamp > currentLast) {
+                                        sharedPref.edit().putLong(SettingsActivity.PREF_LAST_PHOTO_SENT_TIMESTAMP, userChat.timestamp).apply()
+                                    }
+                                }
                                 // Pre-cache with remote URI; local path filled in by dispatchMessage after download.
                                 CoroutineScope(Dispatchers.IO).launch {
                                     localCache.append(roomId, CachedMessage(
@@ -593,6 +608,13 @@ class FireBaseConnector : ChatConnector {
                         replyPreview = msg.replyPreview
                     ))
                     "image" -> {
+                        if (msg.senderId == userUniqueId) {
+                            val sharedPref = context.getSharedPreferences("cowall", Context.MODE_PRIVATE)
+                            val currentLast = sharedPref.getLong(SettingsActivity.PREF_LAST_PHOTO_SENT_TIMESTAMP, 0L)
+                            if (msg.timestamp > currentLast) {
+                                sharedPref.edit().putLong(SettingsActivity.PREF_LAST_PHOTO_SENT_TIMESTAMP, msg.timestamp).apply()
+                            }
+                        }
                         val localFile = msg.localImagePath?.let { File(it) }
                         if (localFile != null && localFile.exists()) {
                             val label = if (msg.senderId == userUniqueId) "You set a pic!"
@@ -635,7 +657,7 @@ class FireBaseConnector : ChatConnector {
         } catch (_: UninitializedPropertyAccessException) {}
     }
 
-    override fun getPatnerUserName(callback: (String?) -> Unit) {
+    override fun getPartnerUserName(callback: (String?) -> Unit) {
         val participantsRef = database.getReference("chatRooms/$roomId/participants")
         var listener: ValueEventListener? = null
         listener = object : ValueEventListener {
@@ -651,6 +673,10 @@ class FireBaseConnector : ChatConnector {
                                 val name = snap.getValue(String::class.java) ?: "Partner"
                                 if (partnerUserName.isEmpty()) {
                                     partnerUserName = name
+                                    // Cache partner name for worker notifications
+                                    context.getSharedPreferences("cowall", Context.MODE_PRIVATE).edit()
+                                        .putString(SettingsActivity.PREF_PARTNER_NAME, name)
+                                        .apply()
                                 }
                                 callback(name)
                             }
